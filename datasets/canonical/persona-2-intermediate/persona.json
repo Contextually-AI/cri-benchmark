@@ -1,0 +1,17 @@
+{
+  "id": "persona-2-intermediate",
+  "name": "Marcus Chen",
+  "description": "A 42-year-old who recently transitioned from architecture to UX design. His preferences evolve over the event sequence — he changes cities, shifts career focus, and updates dietary preferences.",
+  "complexity_level": "intermediate",
+  "traits": {
+    "age": 42,
+    "occupation_history": ["Architect", "UX Designer"],
+    "location_history": ["Portland, Oregon", "Seattle, Washington"],
+    "evolving_preferences": {
+      "diet": ["omnivore", "pescatarian"],
+      "exercise": ["running", "yoga and swimming"]
+    },
+    "family": "married, two children (ages 8 and 12)",
+    "education": "M.Arch from University of Oregon"
+  }
+}

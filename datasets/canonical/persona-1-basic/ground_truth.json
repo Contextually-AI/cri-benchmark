@@ -1,0 +1,405 @@
+{
+  "final_profile": {
+    "name": {
+      "dimension_name": "name",
+      "value": "Alex Chen",
+      "query_topic": "name",
+      "category": "who"
+    },
+    "age": {
+      "dimension_name": "age",
+      "value": "28",
+      "query_topic": "age",
+      "category": "who"
+    },
+    "family_status": {
+      "dimension_name": "family_status",
+      "value": "single",
+      "query_topic": "relationship status",
+      "category": "who"
+    },
+    "occupation": {
+      "dimension_name": "occupation",
+      "value": "Data Analyst at a fintech startup",
+      "query_topic": "occupation",
+      "category": "what"
+    },
+    "hobbies": {
+      "dimension_name": "hobbies",
+      "value": [
+        "rock climbing",
+        "board games",
+        "cooking Thai food"
+      ],
+      "query_topic": "hobbies",
+      "category": "what"
+    },
+    "diet": {
+      "dimension_name": "diet",
+      "value": "vegetarian",
+      "query_topic": "dietary preference",
+      "category": "what"
+    },
+    "city": {
+      "dimension_name": "city",
+      "value": "Denver, Colorado",
+      "query_topic": "current city",
+      "category": "where"
+    },
+    "schedule": {
+      "dimension_name": "schedule",
+      "value": "exercises in the mornings before work",
+      "query_topic": "daily schedule",
+      "category": "when"
+    },
+    "goals": {
+      "dimension_name": "goals",
+      "value": "learning Spanish on Duolingo, considering getting a second cat",
+      "query_topic": "current goals",
+      "category": "why"
+    },
+    "communication_style": {
+      "dimension_name": "communication_style",
+      "value": "casual and friendly, uses emojis occasionally",
+      "query_topic": "communication style",
+      "category": "how"
+    }
+  },
+  "changes": [
+    {
+      "fact": "city",
+      "old_value": "San Francisco, California",
+      "new_value": "Denver, Colorado",
+      "query_topic": "current city",
+      "changed_around_msg": 200,
+      "key_messages": [
+        180,
+        195,
+        210
+      ]
+    },
+    {
+      "fact": "diet",
+      "old_value": "omnivore",
+      "new_value": "vegetarian",
+      "query_topic": "dietary preference",
+      "changed_around_msg": 500,
+      "key_messages": [
+        480,
+        495,
+        510
+      ]
+    },
+    {
+      "fact": "pet_count",
+      "old_value": "one cat (Luna)",
+      "new_value": "considering getting a second cat",
+      "query_topic": "pets",
+      "changed_around_msg": 800,
+      "key_messages": [
+        785,
+        800,
+        815
+      ]
+    }
+  ],
+  "noise_examples": [
+    {
+      "text": "Hey, how's it going today?",
+      "reason": "Generic greeting with no factual content about the user"
+    },
+    {
+      "text": "What's the weather going to be like this weekend?",
+      "reason": "Weather inquiry unrelated to persona attributes"
+    },
+    {
+      "text": "Thanks for the help, that was really useful!",
+      "reason": "Politeness expression with no persona information"
+    },
+    {
+      "text": "Can you help me write an email to my boss?",
+      "reason": "Task request that doesn't reveal persona information"
+    },
+    {
+      "text": "Hmm, let me think about that for a second.",
+      "reason": "Thinking-out-loud with no factual content"
+    },
+    {
+      "text": "LOL that's hilarious 😂",
+      "reason": "Reaction with no informational content"
+    },
+    {
+      "text": "What do you think about the new ChatGPT update?",
+      "reason": "General tech discussion unrelated to persona"
+    },
+    {
+      "text": "Remind me to call my mom later.",
+      "reason": "Reminder request with minimal persona data"
+    },
+    {
+      "text": "Sorry, I got distracted. What were we talking about?",
+      "reason": "Conversational filler with no factual content"
+    },
+    {
+      "text": "That makes sense, thanks for explaining!",
+      "reason": "Acknowledgment with no persona information"
+    }
+  ],
+  "signal_examples": [
+    {
+      "text": "I work as a data analyst at a fintech startup here in Denver.",
+      "target_fact": "occupation: Data Analyst, city: Denver"
+    },
+    {
+      "text": "Luna, my rescue cat, is curled up on my desk again. She always does this when I'm working.",
+      "target_fact": "pet: rescue cat named Luna"
+    },
+    {
+      "text": "Just got back from the climbing gym — managed to send a V6 today!",
+      "target_fact": "hobbies: rock climbing"
+    },
+    {
+      "text": "We had a board game night last Friday. Played Settlers of Catan and Wingspan.",
+      "target_fact": "hobbies: board games"
+    },
+    {
+      "text": "I made pad thai from scratch last night. Thai food is my comfort food.",
+      "target_fact": "hobbies: cooking Thai food"
+    },
+    {
+      "text": "I went vegetarian about six months ago and honestly I feel so much better.",
+      "target_fact": "diet: vegetarian"
+    },
+    {
+      "text": "I just moved to Denver from San Francisco. The cost of living difference is insane.",
+      "target_fact": "city change: San Francisco → Denver"
+    },
+    {
+      "text": "I've been doing Duolingo for Spanish every day. 45 day streak!",
+      "target_fact": "goals: learning Spanish on Duolingo"
+    },
+    {
+      "text": "I always work out in the morning before heading to the office. Helps me focus.",
+      "target_fact": "schedule: exercises in the mornings before work"
+    },
+    {
+      "text": "I'm 28 and still figuring things out. But I love my job at least.",
+      "target_fact": "age: 28"
+    }
+  ],
+  "conflicts": [
+    {
+      "conflict_id": "conflict-basic-01",
+      "topic": "location",
+      "conflicting_statements": [
+        "I live in San Francisco, love the Bay Area vibe.",
+        "Denver is home now. I moved here a few months ago and I'm loving it."
+      ],
+      "correct_resolution": "Alex moved from San Francisco to Denver. Denver is his current city.",
+      "resolution_type": "recency",
+      "introduced_at_messages": [
+        50,
+        250
+      ]
+    },
+    {
+      "conflict_id": "conflict-basic-02",
+      "topic": "diet",
+      "conflicting_statements": [
+        "I had the best burger at this place downtown yesterday.",
+        "I've been vegetarian for six months now. No meat at all."
+      ],
+      "correct_resolution": "Alex transitioned to vegetarian. The burger reference was before the change.",
+      "resolution_type": "recency",
+      "introduced_at_messages": [
+        150,
+        520
+      ]
+    },
+    {
+      "conflict_id": "conflict-basic-03",
+      "topic": "exercise timing",
+      "conflicting_statements": [
+        "I usually hit the gym after work around 6pm.",
+        "I switched to morning workouts. I exercise before work now."
+      ],
+      "correct_resolution": "Alex switched from evening to morning workouts. Morning is current.",
+      "resolution_type": "explicit_correction",
+      "introduced_at_messages": [
+        100,
+        700
+      ]
+    }
+  ],
+  "temporal_facts": [
+    {
+      "fact_id": "tf-basic-01",
+      "description": "Alex lived in San Francisco",
+      "value": "San Francisco, California",
+      "valid_from": "2022-01-01",
+      "valid_until": "2025-12-01",
+      "query_topic": "residence history",
+      "should_be_current": false
+    },
+    {
+      "fact_id": "tf-basic-02",
+      "description": "Alex lives in Denver",
+      "value": "Denver, Colorado",
+      "valid_from": "2025-12-01",
+      "valid_until": null,
+      "query_topic": "current city",
+      "should_be_current": true
+    },
+    {
+      "fact_id": "tf-basic-03",
+      "description": "Alex was an omnivore",
+      "value": "omnivore",
+      "valid_from": null,
+      "valid_until": "2025-09-01",
+      "query_topic": "diet history",
+      "should_be_current": false
+    },
+    {
+      "fact_id": "tf-basic-04",
+      "description": "Alex became vegetarian",
+      "value": "vegetarian",
+      "valid_from": "2025-09-01",
+      "valid_until": null,
+      "query_topic": "current diet",
+      "should_be_current": true
+    },
+    {
+      "fact_id": "tf-basic-05",
+      "description": "Alex is 28 years old",
+      "value": "28",
+      "valid_from": null,
+      "valid_until": null,
+      "query_topic": "age",
+      "should_be_current": true
+    }
+  ],
+  "query_relevance_pairs": [
+    {
+      "query_id": "qrp-basic-01",
+      "query": "What does Alex do for work?",
+      "expected_relevant_facts": [
+        "Data Analyst",
+        "fintech startup"
+      ],
+      "expected_irrelevant_facts": [
+        "rock climbing",
+        "Luna"
+      ]
+    },
+    {
+      "query_id": "qrp-basic-02",
+      "query": "Where does Alex live?",
+      "expected_relevant_facts": [
+        "Denver, Colorado",
+        "moved from San Francisco"
+      ],
+      "expected_irrelevant_facts": [
+        "data analyst",
+        "vegetarian"
+      ]
+    },
+    {
+      "query_id": "qrp-basic-03",
+      "query": "Does Alex have any pets?",
+      "expected_relevant_facts": [
+        "rescue cat named Luna",
+        "considering second cat"
+      ],
+      "expected_irrelevant_facts": [
+        "Denver",
+        "rock climbing"
+      ]
+    },
+    {
+      "query_id": "qrp-basic-04",
+      "query": "What are Alex's hobbies?",
+      "expected_relevant_facts": [
+        "rock climbing",
+        "board games",
+        "cooking Thai food"
+      ],
+      "expected_irrelevant_facts": [
+        "data analyst",
+        "Denver"
+      ]
+    },
+    {
+      "query_id": "qrp-basic-05",
+      "query": "What is Alex's diet?",
+      "expected_relevant_facts": [
+        "vegetarian",
+        "went vegetarian six months ago"
+      ],
+      "expected_irrelevant_facts": [
+        "rock climbing",
+        "Luna"
+      ]
+    },
+    {
+      "query_id": "qrp-basic-06",
+      "query": "How old is Alex?",
+      "expected_relevant_facts": [
+        "28"
+      ],
+      "expected_irrelevant_facts": [
+        "Denver",
+        "data analyst",
+        "vegetarian"
+      ]
+    },
+    {
+      "query_id": "qrp-basic-07",
+      "query": "What is Alex's daily routine?",
+      "expected_relevant_facts": [
+        "exercises in the mornings",
+        "before work"
+      ],
+      "expected_irrelevant_facts": [
+        "Luna",
+        "Thai food"
+      ]
+    },
+    {
+      "query_id": "qrp-basic-08",
+      "query": "What are Alex's goals?",
+      "expected_relevant_facts": [
+        "learning Spanish",
+        "Duolingo",
+        "second cat"
+      ],
+      "expected_irrelevant_facts": [
+        "data analyst",
+        "Denver"
+      ]
+    },
+    {
+      "query_id": "qrp-basic-09",
+      "query": "Is Alex in a relationship?",
+      "expected_relevant_facts": [
+        "single"
+      ],
+      "expected_irrelevant_facts": [
+        "Denver",
+        "vegetarian",
+        "rock climbing"
+      ]
+    },
+    {
+      "query_id": "qrp-basic-10",
+      "query": "How does Alex communicate?",
+      "expected_relevant_facts": [
+        "casual and friendly",
+        "uses emojis"
+      ],
+      "expected_irrelevant_facts": [
+        "data analyst",
+        "Luna"
+      ]
+    }
+  ]
+}

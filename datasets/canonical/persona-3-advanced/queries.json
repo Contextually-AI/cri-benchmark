@@ -1,0 +1,130 @@
+[
+  {
+    "id": "q-pas-001",
+    "question": "Where does Sophia currently live and what does she do professionally?",
+    "expected_answer": "Sophia currently lives in Barcelona's Gràcia neighborhood with her partner James. She is an author and podcast host — she published a book on European populism and hosts a podcast called 'The Dissent' about political discourse in Europe, which has over 50,000 subscribers.",
+    "dimension": "pas",
+    "difficulty": "medium",
+    "context_hint": "current location and career after multiple changes"
+  },
+  {
+    "id": "q-pas-002",
+    "question": "Who is Sophia currently in a relationship with?",
+    "expected_answer": "Sophia is in a relationship with James, a British literary agent she met through her book publisher. They started dating around October 2025 and moved to Barcelona together.",
+    "dimension": "pas",
+    "difficulty": "medium",
+    "context_hint": "current relationship after breakup"
+  },
+  {
+    "id": "q-dbu-001",
+    "question": "Is Sophia still working as a journalist at a Swedish newspaper?",
+    "expected_answer": "No. Sophia left her newspaper job after a disagreement with the editorial board about coverage bias. She freelanced for a while, then published a book on European populism, and now hosts a podcast called 'The Dissent.' She has transitioned from traditional journalism to being an author and podcast host.",
+    "dimension": "dbu",
+    "difficulty": "medium",
+    "context_hint": "career evolution from journalist to author/podcaster"
+  },
+  {
+    "id": "q-dbu-002",
+    "question": "Does Sophia still live in Stockholm with Erik?",
+    "expected_answer": "No. Sophia and Erik broke up and she left Stockholm. She lived in London for a period, then moved to Barcelona with her new partner James. She no longer lives in Stockholm or is with Erik.",
+    "dimension": "dbu",
+    "difficulty": "medium",
+    "context_hint": "relationship and location updates"
+  },
+  {
+    "id": "q-dbu-003",
+    "question": "What is Sophia's stance on social media now?",
+    "expected_answer": "Sophia's views on social media have evolved. She originally called platforms like Twitter and Instagram 'toxic echo chambers' and refused to use them. However, she later launched a podcast and uses social media to promote it. She now says social media has serious problems but can be used strategically without being consumed by it.",
+    "dimension": "dbu",
+    "difficulty": "hard",
+    "context_hint": "opinion reversal on social media"
+  },
+  {
+    "id": "q-tc-001",
+    "question": "Trace Sophia's geographic moves chronologically.",
+    "expected_answer": "Sophia started in Stockholm, Sweden, where she worked as a political journalist and lived with Erik in Södermalm. After their breakup in mid-2025, she moved to London (Hackney area) for a fresh start. In early 2026, she relocated to Barcelona's Gràcia neighborhood with her new partner James.",
+    "dimension": "tc",
+    "difficulty": "hard",
+    "context_hint": "three-city chronological movement"
+  },
+  {
+    "id": "q-tc-002",
+    "question": "When did Sophia's book get published relative to her other life changes?",
+    "expected_answer": "Sophia had been working on the book for about two years while still in Stockholm. She continued writing it after moving to London as a freelancer. The book was published in October 2025, about two months after she settled in London. After publication, she launched her podcast in November 2025.",
+    "dimension": "tc",
+    "difficulty": "hard",
+    "context_hint": "book timeline relative to moves and career changes"
+  },
+  {
+    "id": "q-crq-001",
+    "question": "Is Sophia a vegetarian?",
+    "expected_answer": "This is nuanced. Sophia was a strict vegetarian for over 10 years and considered it core to her identity. However, she was later seen eating sushi, and she eventually clarified that she started eating fish about six months ago and now considers herself pescatarian. She said the change was gradual and doesn't contradict her values. There's also a low-reliability report of her eating chicken paella, but she hasn't confirmed eating poultry.",
+    "dimension": "crq",
+    "difficulty": "hard",
+    "context_hint": "conflicting dietary information from multiple sources"
+  },
+  {
+    "id": "q-crq-002",
+    "question": "Does Sophia use social media? She previously said she was strongly against it.",
+    "expected_answer": "Sophia initially expressed strong opposition to social media, calling platforms 'toxic echo chambers.' However, she later launched a podcast and began using social media to promote it. She acknowledged this apparent contradiction, saying her views evolved — she still thinks social media has problems but believes it can be used strategically. This represents a genuine opinion change, not a contradiction.",
+    "dimension": "crq",
+    "difficulty": "hard",
+    "context_hint": "resolving apparent contradiction in social media stance"
+  },
+  {
+    "id": "q-crq-003",
+    "question": "There are reports of Sophia eating chicken. Is she still pescatarian?",
+    "expected_answer": "Sophia describes herself as pescatarian. A colleague reported seeing her eating chicken paella in Barcelona, but this is from a third-party observation with low reliability. Sophia has not personally confirmed eating poultry. Based on her own statements, she is pescatarian (eats fish but not meat), though there is some uncertainty.",
+    "dimension": "crq",
+    "difficulty": "hard",
+    "context_hint": "evaluating conflicting information with different reliability levels"
+  },
+  {
+    "id": "q-tc-003",
+    "question": "How has Sophia's career evolved over the events?",
+    "expected_answer": "Sophia started as a political journalist at a major Swedish newspaper. She left after an editorial disagreement and became a freelance writer. She then published a book on European populism that received positive reviews. She launched a podcast called 'The Dissent' which grew to 50,000 subscribers. She now speaks at conferences and is planning a second book on technology and democracy.",
+    "dimension": "tc",
+    "difficulty": "hard",
+    "context_hint": "career evolution timeline"
+  },
+  {
+    "id": "q-qrp-001",
+    "question": "Give me a comprehensive profile of Sophia as she is today.",
+    "expected_answer": "Sophia Andersson is a 38-year-old Swedish author and podcast host living in Barcelona's Gràcia neighborhood with her partner James (a British literary agent). She previously worked as a political journalist in Stockholm and freelancer in London. She published a well-received book on European populism and hosts 'The Dissent' podcast (50,000+ subscribers) about political discourse in Europe. She's pescatarian (formerly vegetarian), has evolved her stance on social media from opposition to strategic use, and is planning a second book on technology and democracy. She speaks at European conferences on media and democracy.",
+    "dimension": "qrp",
+    "difficulty": "hard",
+    "context_hint": "comprehensive current state synthesis"
+  },
+  {
+    "id": "q-qrp-002",
+    "question": "What would Sophia be interested in discussing at a dinner party?",
+    "expected_answer": "Based on her interests and career, Sophia would likely want to discuss European politics and populism, media ethics and journalism, the role of technology in democracy, her podcast 'The Dissent', her experience living in Stockholm, London, and Barcelona, and possibly food (she's pescatarian and has been exploring different cuisines). She might also discuss personal transformation and the value of changing one's mind, given her reflections on evolving her rigid positions.",
+    "dimension": "qrp",
+    "difficulty": "hard",
+    "context_hint": "inference from personality and interests"
+  },
+  {
+    "id": "q-mei-001",
+    "question": "What key facts have you stored about me?",
+    "dimension": "mei",
+    "expected_topics": ["profile facts", "stored information"]
+  },
+  {
+    "id": "q-mei-002",
+    "question": "Can you summarize the important details you remember about my background?",
+    "dimension": "mei",
+    "expected_topics": ["background", "key details"]
+  },
+  {
+    "id": "q-sfc-001",
+    "question": "Do you still remember what I mentioned about my temporary work assignment?",
+    "dimension": "sfc",
+    "expected_topics": ["temporary", "ephemeral"]
+  },
+  {
+    "id": "q-sfc-002",
+    "question": "What was my previous opinion before I changed my mind?",
+    "dimension": "sfc",
+    "expected_topics": ["outdated belief", "superseded"]
+  }
+]

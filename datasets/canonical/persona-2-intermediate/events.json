@@ -1,0 +1,107 @@
+[
+  {
+    "id": "evt-001",
+    "content": "Marcus is a 42-year-old architect working at a firm in Portland, Oregon. He specializes in sustainable building design and has been in the field for 15 years.",
+    "timestamp": "2025-06-10T09:00:00Z",
+    "sequence_number": 1,
+    "metadata": {"type": "career", "source": "conversation"}
+  },
+  {
+    "id": "evt-002",
+    "content": "Marcus lives in Portland with his wife Sarah and their two kids — Liam (12) and Mia (8). They have a house in the Alberta Arts District.",
+    "timestamp": "2025-06-15T14:30:00Z",
+    "sequence_number": 2,
+    "metadata": {"type": "family", "source": "conversation"}
+  },
+  {
+    "id": "evt-003",
+    "content": "Marcus is a serious runner. He completed the Portland Marathon last year and trains four times a week. He also enjoys grilling steaks on weekends — he considers himself a barbecue enthusiast.",
+    "timestamp": "2025-07-01T18:00:00Z",
+    "sequence_number": 3,
+    "metadata": {"type": "hobbies", "source": "conversation"}
+  },
+  {
+    "id": "evt-004",
+    "content": "Marcus studied architecture at the University of Oregon, where he earned his M.Arch degree. He's proud of his thesis on biophilic design principles.",
+    "timestamp": "2025-07-20T11:15:00Z",
+    "sequence_number": 4,
+    "metadata": {"type": "education", "source": "conversation"}
+  },
+  {
+    "id": "evt-005",
+    "content": "Marcus mentioned he's been feeling burned out with traditional architecture work. He's been exploring UX design as a potential career shift, taking online courses in the evenings.",
+    "timestamp": "2025-08-15T20:00:00Z",
+    "sequence_number": 5,
+    "metadata": {"type": "career_transition", "source": "conversation"}
+  },
+  {
+    "id": "evt-006",
+    "content": "Marcus has decided to transition to UX design. He accepted a position at a tech company in Seattle. The family will be moving to the Ballard neighborhood next month.",
+    "timestamp": "2025-10-01T10:00:00Z",
+    "sequence_number": 6,
+    "metadata": {"type": "career_transition", "source": "conversation"}
+  },
+  {
+    "id": "evt-007",
+    "content": "Marcus and the family have settled into their new home in Ballard, Seattle. He started his UX design role last week and is enjoying the change.",
+    "timestamp": "2025-11-15T09:30:00Z",
+    "sequence_number": 7,
+    "metadata": {"type": "relocation", "source": "conversation"}
+  },
+  {
+    "id": "evt-008",
+    "content": "Marcus mentioned he had to stop running due to a knee injury. His doctor recommended low-impact exercise, so he's taken up yoga and swimming instead.",
+    "timestamp": "2025-12-01T16:45:00Z",
+    "sequence_number": 8,
+    "metadata": {"type": "health", "source": "conversation"}
+  },
+  {
+    "id": "evt-009",
+    "content": "Marcus said he's been rethinking his diet after watching a documentary about ocean sustainability. He's transitioned to a pescatarian diet — he still eats fish but has stopped eating meat.",
+    "timestamp": "2025-12-20T19:00:00Z",
+    "sequence_number": 9,
+    "metadata": {"type": "diet_change", "source": "conversation"}
+  },
+  {
+    "id": "evt-010",
+    "content": "Marcus is enjoying his new UX design career. He says the architectural thinking translates well — spatial reasoning and user-centric design have a lot in common.",
+    "timestamp": "2026-01-10T11:00:00Z",
+    "sequence_number": 10,
+    "metadata": {"type": "career_reflection", "source": "conversation"}
+  },
+  {
+    "id": "evt-011",
+    "content": "Marcus's son Liam just turned 13 and is interested in coding. Marcus is teaching him Python on weekends.",
+    "timestamp": "2026-01-25T15:30:00Z",
+    "sequence_number": 11,
+    "metadata": {"type": "family", "source": "conversation"}
+  },
+  {
+    "id": "evt-012",
+    "content": "Marcus has started exploring the hiking trails around Seattle with the family. He says Mount Rainier is now his weekend goal. He also joined a local yoga studio in Ballard.",
+    "timestamp": "2026-02-10T08:45:00Z",
+    "sequence_number": 12,
+    "metadata": {"type": "hobbies", "source": "conversation"}
+  },
+  {
+    "id": "evt-013",
+    "content": "Marcus mentioned he's been cooking more fish-based meals at home. He's experimenting with Japanese recipes — sushi, miso soup, and grilled salmon have become staples.",
+    "timestamp": "2026-02-20T18:30:00Z",
+    "sequence_number": 13,
+    "metadata": {"type": "diet", "source": "conversation"}
+  },
+  {
+    "id": "evt-014",
+    "content": "Marcus reflected on his career change, saying it was the best decision he's made. He doesn't miss architecture as a profession but still appreciates it as a passion.",
+    "timestamp": "2026-03-01T12:00:00Z",
+    "sequence_number": 14,
+    "metadata": {"type": "career_reflection", "source": "conversation"}
+  },
+  {
+    "id": "evt-015",
+    "content": "Marcus's daughter Mia is turning 9 next week. They're planning a birthday party at the Seattle Aquarium, which Mia loves.",
+    "timestamp": "2026-03-05T17:15:00Z",
+    "sequence_number": 15,
+    "metadata": {"type": "family", "source": "conversation"}
+  }
+]
