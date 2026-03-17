@@ -1,0 +1,148 @@
+name: CI — CRI Benchmark
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Ensure tests never call external LLM APIs.
+  # Adapters and judges must use mocks/stubs in the test suite.
+  CRI_TESTING: "1"
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Lint & Format ─────────────────────────────────────────────
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: lint-pip-${{ hashFiles('pyproject.toml') }}
+          restore-keys: lint-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Check formatting (ruff format)
+        run: ruff format --check src/ tests/
+
+      - name: Lint (ruff check)
+        run: ruff check src/ tests/
+
+  # ── Type Check ────────────────────────────────────────────────
+  type-check:
+    name: Type Check (mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: typecheck-pip-${{ hashFiles('pyproject.toml') }}
+          restore-keys: typecheck-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run mypy
+        run: mypy src/cri/
+
+  # ── Tests (matrix) ───────────────────────────────────────────
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: test-pip-py${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: test-pip-py${{ matrix.python-version }}-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run tests with coverage
+        run: |
+          pytest \
+            --cov=cri \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-report=html:htmlcov/ \
+            --junitxml=junit.xml \
+            -v
+
+      - name: Upload coverage report
+        if: matrix.python-version == '3.12' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            htmlcov/
+            coverage.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-py${{ matrix.python-version }}
+          path: junit.xml
+
+  # ── Gate ──────────────────────────────────────────────────────
+  ci-pass:
+    name: CI ✓
+    if: always()
+    needs: [lint, type-check, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide status
+        run: |
+          if [[ "${{ needs.lint.result }}" == "failure" || \
+                "${{ needs.type-check.result }}" == "failure" || \
+                "${{ needs.test.result }}" == "failure" ]]; then
+            echo "❌ CI failed"
+            exit 1
+          fi
+          echo "✅ All checks passed"

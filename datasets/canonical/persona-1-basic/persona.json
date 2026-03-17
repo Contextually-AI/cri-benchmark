@@ -1,0 +1,16 @@
+{
+  "id": "persona-1-basic",
+  "name": "Elena Vasquez",
+  "description": "A 34-year-old software engineer living in Austin, Texas. She has clear, stable preferences and a straightforward background.",
+  "complexity_level": "basic",
+  "traits": {
+    "age": 34,
+    "occupation": "Software Engineer",
+    "location": "Austin, Texas",
+    "hobbies": ["hiking", "reading science fiction", "cooking Italian food"],
+    "pet": "a golden retriever named Max",
+    "education": "BS Computer Science from UT Austin",
+    "favorite_food": "pasta carbonara",
+    "music_preference": "indie rock"
+  }
+}

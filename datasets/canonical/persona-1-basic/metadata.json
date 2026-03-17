@@ -1,0 +1,8 @@
+{
+  "dataset_id": "persona-1-basic",
+  "persona_id": "persona-1-basic",
+  "message_count": 1000,
+  "simulated_days": 76,
+  "version": "1.0.0",
+  "seed": 42
+}

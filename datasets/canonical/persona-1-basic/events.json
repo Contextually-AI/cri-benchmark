@@ -1,0 +1,58 @@
+[
+  {
+    "id": "evt-001",
+    "content": "Elena mentioned that she works as a software engineer at a tech startup in Austin, Texas. She's been there for about three years now.",
+    "timestamp": "2026-01-05T09:30:00Z",
+    "sequence_number": 1,
+    "metadata": {"type": "career", "source": "conversation"}
+  },
+  {
+    "id": "evt-002",
+    "content": "Elena talked about her golden retriever Max. She adopted him two years ago from a local shelter and they go hiking together on weekends at Barton Creek Greenbelt.",
+    "timestamp": "2026-01-08T14:15:00Z",
+    "sequence_number": 2,
+    "metadata": {"type": "personal", "source": "conversation"}
+  },
+  {
+    "id": "evt-003",
+    "content": "Elena shared that she studied Computer Science at UT Austin and graduated in 2014. She's proud of being a Longhorn.",
+    "timestamp": "2026-01-12T11:00:00Z",
+    "sequence_number": 3,
+    "metadata": {"type": "education", "source": "conversation"}
+  },
+  {
+    "id": "evt-004",
+    "content": "Elena said her favorite food is pasta carbonara. She learned to make it from scratch during a trip to Rome last summer. She loves cooking Italian food in general.",
+    "timestamp": "2026-01-15T19:45:00Z",
+    "sequence_number": 4,
+    "metadata": {"type": "preferences", "source": "conversation"}
+  },
+  {
+    "id": "evt-005",
+    "content": "Elena mentioned she's really into indie rock music. Her favorite band is The National, and she recently went to their concert at ACL Live.",
+    "timestamp": "2026-01-18T20:30:00Z",
+    "sequence_number": 5,
+    "metadata": {"type": "preferences", "source": "conversation"}
+  },
+  {
+    "id": "evt-006",
+    "content": "Elena talked about her weekend plans: she wants to hike at Enchanted Rock State Natural Area and try a new science fiction book by Adrian Tchaikovsky.",
+    "timestamp": "2026-01-22T08:00:00Z",
+    "sequence_number": 6,
+    "metadata": {"type": "hobbies", "source": "conversation"}
+  },
+  {
+    "id": "evt-007",
+    "content": "Elena is 34 years old and lives in a small apartment in the East Austin neighborhood. She's been thinking about buying a house nearby.",
+    "timestamp": "2026-01-25T16:20:00Z",
+    "sequence_number": 7,
+    "metadata": {"type": "personal", "source": "conversation"}
+  },
+  {
+    "id": "evt-008",
+    "content": "Elena mentioned she prefers working from home most days. Her company allows a hybrid schedule — she goes to the office on Tuesdays and Thursdays.",
+    "timestamp": "2026-01-28T10:10:00Z",
+    "sequence_number": 8,
+    "metadata": {"type": "career", "source": "conversation"}
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "dataset_id": "persona-3-advanced",
+  "persona_id": "persona-3-advanced",
+  "message_count": 3000,
+  "simulated_days": 238,
+  "version": "1.0.0",
+  "seed": 42
+}

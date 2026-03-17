@@ -1,0 +1,75 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cri-benchmark"
+version = "0.1.0"
+description = "CRI Benchmark — Contextual Resonance Index: An open-source benchmark for evaluating AI long-term memory systems"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "CRI Benchmark Contributors" },
+]
+keywords = ["benchmark", "memory", "evaluation", "personalization", "ai", "llm", "context"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "pydantic>=2.0",
+    "click>=8.0",
+    "rich>=13.0",
+    "langchain-core>=0.3",
+    "langchain-anthropic>=0.3",
+    "upp-python>=0.1.0",
+]
+
+[project.optional-dependencies]
+rag = [
+    "chromadb>=0.4",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio",
+    "ruff",
+    "mypy",
+    "pytest-cov",
+    "build",
+]
+
+[project.scripts]
+cri = "cri.runner:main"
+
+[project.urls]
+Homepage = "https://github.com/Contextually-AI/cri-benchmark"
+Documentation = "https://github.com/Contextually-AI/cri-benchmark/tree/main/docs"
+Repository = "https://github.com/Contextually-AI/cri-benchmark"
+Issues = "https://github.com/Contextually-AI/cri-benchmark/issues"
+Changelog = "https://github.com/Contextually-AI/cri-benchmark/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 160
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "A", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
