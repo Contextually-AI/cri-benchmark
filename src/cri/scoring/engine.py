@@ -177,9 +177,7 @@ class ScoringEngine:
                     details=[{"error": str(exc)}],
                 )
 
-        pairs = await asyncio.gather(
-            *[_score_one(d) for d in self.config.enabled_dimensions]
-        )
+        pairs = await asyncio.gather(*[_score_one(d) for d in self.config.enabled_dimensions])
         for dim_name, result in pairs:
             if result is not None:
                 dimension_results[dim_name] = result
@@ -228,6 +226,7 @@ class ScoringEngine:
             run_id=run_id,
             adapter_name=system_name,
             dataset_id="",  # populated by caller if needed
+            judge_runs=self.judge.num_runs,
             started_at=started_at,
             completed_at=completed_at,
             cri_result=cri_result,

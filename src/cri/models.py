@@ -297,6 +297,14 @@ class JudgmentResult(BaseModel):
     prompt: str = Field(description="The prompt sent to the LLM judge")
     raw_responses: list[str] = Field(description="Raw text responses from the judge LLM")
 
+    @property
+    def agreement_ratio(self) -> float:
+        """Fraction of votes matching the final verdict (0.0 to 1.0)."""
+        if not self.votes:
+            return 0.0
+        matching = sum(1 for v in self.votes if v == self.verdict)
+        return matching / len(self.votes)
+
 
 class DimensionResult(BaseModel):
     """Aggregated result for a single CRI evaluation dimension.
@@ -373,6 +381,7 @@ class BenchmarkResult(BaseModel):
     run_id: str = Field(description="Unique identifier for this benchmark run")
     adapter_name: str = Field(description="Name of the memory system adapter evaluated")
     dataset_id: str = Field(description="Identifier of the dataset used")
+    judge_runs: int = Field(default=3, description="Number of judge invocations per evaluation check")
     started_at: str = Field(description="ISO-8601 timestamp when the run started")
     completed_at: str = Field(description="ISO-8601 timestamp when the run completed")
     cri_result: CRIResult = Field(description="CRI evaluation scores")

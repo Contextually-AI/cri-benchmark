@@ -43,9 +43,7 @@ class CRQDimension(MetricDimension):
 
         if not conflicts:
             logger.info("CRQ: no conflict scenarios in ground truth; score=1.0")
-            return DimensionResult(
-                dimension_name=self.name, score=1.0, passed_checks=0, total_checks=0, details=[]
-            )
+            return DimensionResult(dimension_name=self.name, score=1.0, passed_checks=0, total_checks=0, details=[])
 
         async def _check_one(scenario: ConflictScenario) -> dict[str, object]:
             check_id = f"crq-{scenario.conflict_id}"
@@ -56,7 +54,9 @@ class CRQDimension(MetricDimension):
                 check_id,
                 fact_texts,
                 lambda chunk, _topic=scenario.topic, _res=scenario.correct_resolution: crq_resolution_check(  # type: ignore[misc]
-                    topic=_topic, correct_resolution=_res, stored_facts=chunk,
+                    topic=_topic,
+                    correct_resolution=_res,
+                    stored_facts=chunk,
                 ),
             )
             verdict_passed = result.verdict is Verdict.YES

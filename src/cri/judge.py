@@ -118,8 +118,8 @@ class BinaryJudge:
             that creates the LLM instance.  Defaults to
             :func:`create_default_llm` (Anthropic OAuth).
         num_runs: Number of independent LLM calls per judgment
-            (default ``3``).  Must be an odd positive integer for a clean
-            majority.
+            (default ``3``).  Must be a positive integer.  Odd values are
+            recommended; with even values, ties resolve to NO.
         temperature: Sampling temperature (default ``0.0`` for
             deterministic output).  Passed to the factory.
         max_tokens: Maximum tokens in each LLM response (default ``10``).
@@ -136,6 +136,13 @@ class BinaryJudge:
         max_tokens: int = 10,
         max_concurrency: int = 15,
     ) -> None:
+        if num_runs < 1:
+            raise ValueError(f"num_runs must be >= 1, got {num_runs}")
+        if num_runs % 2 == 0:
+            logger.warning(
+                "num_runs=%d is even; ties will resolve to NO",
+                num_runs,
+            )
         self.num_runs = num_runs
         self.temperature = temperature
         self.max_tokens = max_tokens
@@ -165,9 +172,7 @@ class BinaryJudge:
             individual votes, unanimity flag, prompt, and raw responses.
         """
         # Fire all majority-vote calls concurrently.
-        raw_responses: list[str] = list(
-            await asyncio.gather(*[self._call_llm(prompt) for _ in range(self.num_runs)])
-        )
+        raw_responses: list[str] = list(await asyncio.gather(*[self._call_llm(prompt) for _ in range(self.num_runs)]))
         votes = [self._parse_vote(raw) for raw in raw_responses]
 
         yes_count = sum(1 for v in votes if v is Verdict.YES)

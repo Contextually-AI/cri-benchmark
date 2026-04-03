@@ -880,6 +880,50 @@ class TestJudgmentResult:
                 raw_responses=["YES"],
             )  # type: ignore[call-arg]  # missing check_id
 
+    def test_agreement_ratio_unanimous(self) -> None:
+        jr = JudgmentResult(
+            check_id="ar-1",
+            verdict=Verdict.YES,
+            votes=[Verdict.YES, Verdict.YES, Verdict.YES],
+            unanimous=True,
+            prompt="p",
+            raw_responses=["YES", "YES", "YES"],
+        )
+        assert jr.agreement_ratio == 1.0
+
+    def test_agreement_ratio_majority(self) -> None:
+        jr = JudgmentResult(
+            check_id="ar-2",
+            verdict=Verdict.YES,
+            votes=[Verdict.YES, Verdict.YES, Verdict.NO],
+            unanimous=False,
+            prompt="p",
+            raw_responses=["YES", "YES", "NO"],
+        )
+        assert jr.agreement_ratio == pytest.approx(2 / 3)
+
+    def test_agreement_ratio_single_vote(self) -> None:
+        jr = JudgmentResult(
+            check_id="ar-3",
+            verdict=Verdict.NO,
+            votes=[Verdict.NO],
+            unanimous=True,
+            prompt="p",
+            raw_responses=["NO"],
+        )
+        assert jr.agreement_ratio == 1.0
+
+    def test_agreement_ratio_empty_votes(self) -> None:
+        jr = JudgmentResult(
+            check_id="ar-4",
+            verdict=Verdict.NO,
+            votes=[],
+            unanimous=True,
+            prompt="p",
+            raw_responses=[],
+        )
+        assert jr.agreement_ratio == 0.0
+
 
 # ===================================================================
 # DimensionResult
@@ -1078,6 +1122,22 @@ class TestBenchmarkResult:
         assert br.run_id == "run-001"
         assert br.adapter_name == "test-adapter"
         assert br.cri_result.cri == 0.80
+        assert br.judge_runs == 3  # default
+
+    def test_judge_runs_custom(self) -> None:
+        br = self._make_result()
+        data = br.model_dump()
+        data["judge_runs"] = 5
+        restored = BenchmarkResult.model_validate(data)
+        assert restored.judge_runs == 5
+
+    def test_judge_runs_backward_compat(self) -> None:
+        """Old results without judge_runs field still deserialize."""
+        br = self._make_result()
+        data = br.model_dump()
+        del data["judge_runs"]
+        restored = BenchmarkResult.model_validate(data)
+        assert restored.judge_runs == 3  # default
 
     def test_roundtrip(self) -> None:
         br = self._make_result()

@@ -41,9 +41,7 @@ class QRPDimension(MetricDimension):
 
         if not pairs:
             logger.info("QRP: no query-relevance pairs — returning 1.0 (vacuous)")
-            return DimensionResult(
-                dimension_name=self.name, score=1.0, passed_checks=0, total_checks=0, details=[]
-            )
+            return DimensionResult(dimension_name=self.name, score=1.0, passed_checks=0, total_checks=0, details=[])
 
         async def _score_pair(pair: QueryRelevancePair) -> tuple[float, int, int, list[dict[str, object]]]:
             """Score a single query-relevance pair. Returns (pair_score, passed, total, details)."""
@@ -54,19 +52,31 @@ class QRPDimension(MetricDimension):
                 # No facts returned — both recall and precision are 0.
                 pair_details: list[dict[str, object]] = []
                 for idx, expected_fact in enumerate(pair.expected_relevant_facts):
-                    pair_details.append({
-                        "check_id": f"qrp_rel_{pair.query_id}_{idx}",
-                        "query_id": pair.query_id, "query": pair.query,
-                        "check_type": "relevance", "expected_fact": expected_fact,
-                        "verdict": "NO", "passed": False, "num_returned_facts": 0,
-                    })
+                    pair_details.append(
+                        {
+                            "check_id": f"qrp_rel_{pair.query_id}_{idx}",
+                            "query_id": pair.query_id,
+                            "query": pair.query,
+                            "check_type": "relevance",
+                            "expected_fact": expected_fact,
+                            "verdict": "NO",
+                            "passed": False,
+                            "num_returned_facts": 0,
+                        }
+                    )
                 for idx, irrelevant_fact in enumerate(pair.expected_irrelevant_facts):
-                    pair_details.append({
-                        "check_id": f"qrp_irr_{pair.query_id}_{idx}",
-                        "query_id": pair.query_id, "query": pair.query,
-                        "check_type": "irrelevance", "expected_fact": irrelevant_fact,
-                        "verdict": "N/A", "passed": False, "num_returned_facts": 0,
-                    })
+                    pair_details.append(
+                        {
+                            "check_id": f"qrp_irr_{pair.query_id}_{idx}",
+                            "query_id": pair.query_id,
+                            "query": pair.query,
+                            "check_type": "irrelevance",
+                            "expected_fact": irrelevant_fact,
+                            "verdict": "N/A",
+                            "passed": False,
+                            "num_returned_facts": 0,
+                        }
+                    )
                 total = len(pair.expected_relevant_facts) + len(pair.expected_irrelevant_facts)
                 return 0.0, 0, total, pair_details
 
@@ -75,35 +85,49 @@ class QRPDimension(MetricDimension):
             async def _rel_check(idx: int, expected_fact: str) -> dict[str, object]:
                 check_id = f"qrp_rel_{pair.query_id}_{idx}"
                 result = await judge.judge_across_chunks(
-                    check_id, fact_texts,
+                    check_id,
+                    fact_texts,
                     lambda chunk, _q=pair.query, _f=expected_fact: qrp_relevance_check(  # type: ignore[misc]
-                        query=_q, expected_fact=_f, stored_facts=chunk,
+                        query=_q,
+                        expected_fact=_f,
+                        stored_facts=chunk,
                     ),
                 )
                 check_passed = result.verdict is Verdict.YES
                 logger.debug("QRP relevance check %s: verdict=%s passed=%s", check_id, result.verdict.value, check_passed)
                 return {
-                    "check_id": check_id, "query_id": pair.query_id, "query": pair.query,
-                    "check_type": "relevance", "expected_fact": expected_fact,
-                    "verdict": result.verdict.value, "passed": check_passed,
+                    "check_id": check_id,
+                    "query_id": pair.query_id,
+                    "query": pair.query,
+                    "check_type": "relevance",
+                    "expected_fact": expected_fact,
+                    "verdict": result.verdict.value,
+                    "passed": check_passed,
                     "num_returned_facts": len(fact_texts),
                 }
 
             async def _irr_check(idx: int, irrelevant_fact: str) -> dict[str, object]:
                 check_id = f"qrp_irr_{pair.query_id}_{idx}"
                 result = await judge.judge_across_chunks(
-                    check_id, fact_texts,
+                    check_id,
+                    fact_texts,
                     lambda chunk, _q=pair.query, _f=irrelevant_fact: qrp_irrelevance_check(  # type: ignore[misc]
-                        query=_q, irrelevant_fact=_f, stored_facts=chunk,
+                        query=_q,
+                        irrelevant_fact=_f,
+                        stored_facts=chunk,
                     ),
                 )
                 # YES = irrelevant fact included (FAIL); NO = correctly excluded (PASS)
                 check_passed = result.verdict is Verdict.NO
                 logger.debug("QRP irrelevance check %s: verdict=%s passed=%s", check_id, result.verdict.value, check_passed)
                 return {
-                    "check_id": check_id, "query_id": pair.query_id, "query": pair.query,
-                    "check_type": "irrelevance", "expected_fact": irrelevant_fact,
-                    "verdict": result.verdict.value, "passed": check_passed,
+                    "check_id": check_id,
+                    "query_id": pair.query_id,
+                    "query": pair.query,
+                    "check_type": "irrelevance",
+                    "expected_fact": irrelevant_fact,
+                    "verdict": result.verdict.value,
+                    "passed": check_passed,
                     "num_returned_facts": len(fact_texts),
                 }
 
@@ -133,7 +157,14 @@ class QRPDimension(MetricDimension):
 
             logger.debug(
                 "QRP pair %s: recall=%.4f (%d/%d) precision=%.4f (%d/%d) pair_score=%.4f",
-                pair.query_id, recall, rel_passed, rel_total, precision, irr_passed, irr_total, pair_score,
+                pair.query_id,
+                recall,
+                rel_passed,
+                rel_total,
+                precision,
+                irr_passed,
+                irr_total,
+                pair_score,
             )
 
             return pair_score, total_passed, total_checks, list(all_details)
@@ -156,7 +187,10 @@ class QRPDimension(MetricDimension):
 
         logger.info(
             "QRP: %d/%d checks passed across %d pairs — score %.4f",
-            total_passed, total_checks, len(pairs), dimension_score,
+            total_passed,
+            total_checks,
+            len(pairs),
+            dimension_score,
         )
 
         return DimensionResult(

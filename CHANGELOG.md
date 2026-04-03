@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Disk-based LLM response cache (`llm_cache.py`) to avoid redundant API calls across runs
+- Support for single-judge mode (`num_runs=1`) and single-metric evaluation via CLI
 - Async parallel LLM judging with semaphore-based concurrency control for significantly faster benchmark runs
 - PowerShell runner script (`run.ps1`) for Windows support
 
@@ -22,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rewrote scoring rubrics to match the six-dimension structure
 - Improved type annotations and static analysis compliance across all scoring dimensions
 - Refactored tests to use factory-based response generation instead of mocks
+- BinaryJudge now accepts even `num_runs` values (ties resolve to NO) with a warning
 
 ### Fixed
 

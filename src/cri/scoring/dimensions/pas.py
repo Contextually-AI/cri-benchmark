@@ -87,18 +87,10 @@ class ProfileAccuracyScore(MetricDimension):
                 values: list[str] = profile_dim.value
                 for idx, val in enumerate(values):
                     cid = f"pas-{dim_name}-{idx}"
-                    tasks.append(
-                        asyncio.create_task(
-                            _check_one(cid, fact_texts, profile_dim.dimension_name, dim_name, val)
-                        )
-                    )
+                    tasks.append(asyncio.create_task(_check_one(cid, fact_texts, profile_dim.dimension_name, dim_name, val)))
             else:
                 cid = f"pas-{dim_name}"
-                tasks.append(
-                    asyncio.create_task(
-                        _check_one(cid, fact_texts, profile_dim.dimension_name, dim_name, profile_dim.value)
-                    )
-                )
+                tasks.append(asyncio.create_task(_check_one(cid, fact_texts, profile_dim.dimension_name, dim_name, profile_dim.value)))
 
         if not tasks:
             return DimensionResult(dimension_name=self.name, score=0.0, passed_checks=0, total_checks=0, details=[])

@@ -60,9 +60,7 @@ def _make_mock_llm_factory_sequence(contents: list[str]):
     def factory(temperature: float = 0.0, max_tokens: int = 10) -> MagicMock:
         mock_llm = MagicMock()
         mock_llm.invoke.side_effect = [AIMessage(content=c) for c in contents]
-        mock_llm.ainvoke = AsyncMock(
-            side_effect=[AIMessage(content=c) for c in contents]
-        )
+        mock_llm.ainvoke = AsyncMock(side_effect=[AIMessage(content=c) for c in contents])
         return mock_llm
 
     return factory

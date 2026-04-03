@@ -9,6 +9,7 @@ set -euo pipefail
 #   ./run.sh --adapter rag                          Single adapter, all datasets
 #   ./run.sh --adapter rag --dataset datasets/canonical/persona-1-base
 #   ./run.sh --adapter rag --adapter full-context   Multiple adapters
+#   ./run.sh --dimensions PAS,DBU                   Only score specific dimensions
 #   ./run.sh --format markdown --verbose            Extra flags forwarded to cri
 
 IMAGE="cri-benchmark"
@@ -29,6 +30,9 @@ log() { echo "[$(ts)] $*"; }
 ADAPTERS=()
 DATASETS=()
 LIMIT=""
+DIMENSIONS=""
+CACHE=false
+CACHE_DIR=""
 EXTRA_ARGS=()
 
 while [ $# -gt 0 ]; do
@@ -39,7 +43,13 @@ while [ $# -gt 0 ]; do
             DATASETS+=("$2"); shift 2 ;;
         --limit)
             LIMIT="$2"; shift 2 ;;
-        --output|--format|--profile|--dimensions|--judge-runs)
+        --dimensions)
+            DIMENSIONS="$2"; shift 2 ;;
+        --cache)
+            CACHE=true; shift ;;
+        --cache-dir)
+            CACHE=true; CACHE_DIR="$2"; shift 2 ;;
+        --output|--format|--profile|--judge-runs)
             EXTRA_ARGS+=("$1" "$2"); shift 2 ;;
         --verbose|--scale-test)
             EXTRA_ARGS+=("$1"); shift ;;
@@ -112,13 +122,17 @@ fi
 if [ "$HAS_VERBOSE" = false ]; then
     COMMON_FLAGS+=("--verbose")
 fi
-if [ "$HAS_PROFILE" = false ]; then
+if [ -n "$DIMENSIONS" ]; then
+    COMMON_FLAGS+=("--dimensions" "$DIMENSIONS")
+elif [ "$HAS_PROFILE" = false ]; then
     COMMON_FLAGS+=("--profile" "extended")
 fi
 
 # ── Run ──────────────────────────────────────────────────────────
 log "Adapters: ${ADAPTERS[*]}"
 log "Datasets: ${DATASETS[*]}"
+[ -n "$DIMENSIONS" ] && log "Dimensions: $DIMENSIONS"
+[ "$CACHE" = true ] && log "Cache:    enabled (${CACHE_DIR:-$(pwd)/.cri_cache})"
 [ -n "$LIMIT" ] && log "Limit: $LIMIT messages per dataset"
 log "Log file: $LOG_FILE"
 echo ""
@@ -140,15 +154,27 @@ for ds in "${DATASETS[@]}"; do
             OUTPUT_FLAG=("--output" "/app/results/${adapter}_$(basename "$ds")")
         fi
 
+        # Build cache volume + flags
+        CACHE_VOLUME=()
+        CACHE_FLAGS=()
+        if [ "$CACHE" = true ]; then
+            HOST_CACHE_DIR="${CACHE_DIR:-$(pwd)/.cri_cache}"
+            mkdir -p "$HOST_CACHE_DIR"
+            CACHE_VOLUME=("-v" "$HOST_CACHE_DIR:/app/.cri_cache")
+            CACHE_FLAGS=("--cache" "--cache-dir" "/app/.cri_cache")
+        fi
+
         docker run --rm \
             --user "$(id -u):$(id -g)" \
             -v "$RESULTS_DIR:/app/results" \
             -v "$(pwd)/../.auth_token:/.auth_token:ro" \
+            "${CACHE_VOLUME[@]+"${CACHE_VOLUME[@]}"}" \
             "$IMAGE" run \
                 --adapter "$adapter" \
                 --dataset "$ds" \
                 "${OUTPUT_FLAG[@]}" \
                 "${COMMON_FLAGS[@]}" \
+                "${CACHE_FLAGS[@]+"${CACHE_FLAGS[@]}"}" \
                 "${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}" \
             || log "WARNING: Adapter '$adapter' failed on '$ds' (skipping)"
 
@@ -168,7 +194,8 @@ python3 -c "
 import json, os, sys
 
 results_dir = sys.argv[1]
-dims = ['PAS','DBU','MEI','TC','CRQ','QRP']
+dims_arg = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] else ''
+dims = [d.strip().upper() for d in dims_arg.split(',') if d.strip()] if dims_arg else ['PAS','DBU','MEI','TC','CRQ','QRP']
 
 # Collect results
 rows = []
@@ -239,6 +266,6 @@ for dim in dims:
 
 with open(sys.argv[2], 'w') as f:
     f.write('\n'.join(lines))
-" "$RESULTS_DIR" "$SUMMARY"
+" "$RESULTS_DIR" "$SUMMARY" "$DIMENSIONS"
 
 log "Summary written to $SUMMARY"

@@ -70,6 +70,7 @@ class AlwaysNoJudge:
 
     def __init__(self) -> None:
         self._log: list[JudgmentResult] = []
+        self.num_runs: int = 3
 
     async def judge(self, check_id: str, prompt: str) -> JudgmentResult:
         result = JudgmentResult(
@@ -104,6 +105,7 @@ class SmartMockJudge:
 
     def __init__(self) -> None:
         self._log: list[JudgmentResult] = []
+        self.num_runs: int = 3
 
     async def judge(self, check_id: str, prompt: str) -> JudgmentResult:
         prompt_upper = prompt.upper()
@@ -145,6 +147,7 @@ class AlwaysYesJudge:
 
     def __init__(self) -> None:
         self._log: list[JudgmentResult] = []
+        self.num_runs: int = 3
 
     async def judge(self, check_id: str, prompt: str) -> JudgmentResult:
         result = JudgmentResult(

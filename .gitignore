@@ -52,6 +52,9 @@ htmlcov/
 Thumbs.db
 Desktop.ini
 
+# LLM response cache
+.cri_cache/
+
 # Benchmark outputs
 results/
 results-*/
@@ -60,9 +63,6 @@ reports/
 
 # Logs
 *.log
-
-# uv
-uv.lock
 
 
 logs/*

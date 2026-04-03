@@ -37,6 +37,7 @@ import logging
 from pathlib import Path
 
 import click
+from langchain_core.language_models.chat_models import BaseChatModel
 from rich.console import Console
 from rich.progress import (
     BarColumn,
@@ -239,6 +240,8 @@ async def run_benchmark(
     dimensions: list[str] | None = None,
     scale_test: bool = False,
     limit: int | None = None,
+    cache: bool = False,
+    cache_dir: str | None = None,
 ) -> BenchmarkResult:
     """Execute the full CRI benchmark pipeline.
 
@@ -268,6 +271,9 @@ async def run_benchmark(
             with ``profile``).
         scale_test: Whether to run the SSI scale-sensitivity test.
         limit: Maximum number of messages to ingest (for quick smoke tests).
+        cache: Enable disk-based LLM response caching to avoid redundant
+            API calls across benchmark runs.
+        cache_dir: Directory for the cache database (default ``.cri_cache/``).
 
     Returns:
         The complete BenchmarkResult.
@@ -309,8 +315,23 @@ async def run_benchmark(
             f"Required methods: ingest(), retrieve(), get_events()."
         )
 
-    # 4. Create judge
-    factory = llm_factory or create_default_llm
+    # 4. Create judge (with optional LLM response cache)
+    base_factory: LLMFactory = llm_factory or create_default_llm
+    factory: LLMFactory
+    if cache:
+        from cri.utils.llm_cache import SQLiteDiskCache
+
+        _cache_path = Path(cache_dir or ".cri_cache") / "llm_cache.sqlite"
+        _disk_cache = SQLiteDiskCache(db_path=_cache_path)
+
+        def _cached_factory(temperature: float, max_tokens: int) -> BaseChatModel:
+            llm = base_factory(temperature, max_tokens)
+            llm.cache = _disk_cache
+            return llm
+
+        factory = _cached_factory
+    else:
+        factory = base_factory
     judge = BinaryJudge(
         llm_factory=factory,
         num_runs=judge_runs,
@@ -485,8 +506,8 @@ def main() -> None:
     "--judge-runs",
     default=3,
     show_default=True,
-    type=int,
-    help="Number of judge invocations per evaluation check (majority vote).",
+    type=click.IntRange(min=1),
+    help="Number of judge invocations per evaluation check (majority vote). Odd values recommended.",
 )
 @click.option(
     "--output",
@@ -529,6 +550,17 @@ def main() -> None:
     type=int,
     help="Maximum number of messages to ingest (useful for quick smoke tests).",
 )
+@click.option(
+    "--cache/--no-cache",
+    default=False,
+    help="Cache LLM judge responses to disk to avoid redundant API calls across runs.",
+)
+@click.option(
+    "--cache-dir",
+    default=None,
+    type=click.Path(file_okay=False, dir_okay=True),
+    help="Directory for the LLM response cache (default: .cri_cache/).",
+)
 def run(
     adapter: str,
     dataset: str,
@@ -540,6 +572,8 @@ def run(
     dimensions_str: str | None,
     scale_test: bool,
     limit: int | None,
+    cache: bool,
+    cache_dir: str | None,
 ) -> None:
     """Run the CRI benchmark with a given adapter and dataset."""
     # Validate mutual exclusivity of --profile and --dimensions.
@@ -554,6 +588,8 @@ def run(
     console.print(f"  Adapter:     [bold]{adapter}[/bold]")
     console.print(f"  Dataset:     {dataset}")
     console.print(f"  Judge runs:  {judge_runs}")
+    if judge_runs % 2 == 0:
+        console.print("  [yellow]⚠ Even judge-runs: ties will default to NO[/yellow]")
     console.print(f"  Format:      {fmt}")
     if profile:
         console.print(f"  Profile:     {profile}")
@@ -563,6 +599,8 @@ def run(
         console.print("  Scale test:  enabled")
     if limit:
         console.print(f"  Limit:       {limit} messages")
+    if cache:
+        console.print(f"  Cache:       enabled ({cache_dir or '.cri_cache/'})")
     if output:
         console.print(f"  Output dir:  {output}")
     console.print()
@@ -580,6 +618,8 @@ def run(
                 dimensions=dimensions,
                 scale_test=scale_test,
                 limit=limit,
+                cache=cache,
+                cache_dir=cache_dir,
             )
         )
     except click.BadParameter as exc:

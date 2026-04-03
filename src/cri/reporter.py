@@ -110,6 +110,8 @@ class BenchmarkReporter:
             con.print(f"Dataset: {info['dataset']}")
         if info.get("timestamp"):
             con.print(f"Timestamp: {info['timestamp']}")
+        if info.get("judge_runs"):
+            con.print(f"Judge runs: {info['judge_runs']}")
         con.print()
 
         table = Table(title="CRI Scores")
@@ -200,6 +202,8 @@ class BenchmarkReporter:
             lines.append(f"**Dataset:** {info['dataset']}")
         if info.get("timestamp"):
             lines.append(f"**Timestamp:** {info['timestamp']}")
+        if info.get("judge_runs"):
+            lines.append(f"**Judge runs:** {info['judge_runs']}")
         lines.append(f"**Composite CRI Score:** {info['composite_cri']:.2f}")
         lines.append("")
 
@@ -356,6 +360,7 @@ class BenchmarkReporter:
             info["timestamp"] = result.started_at
             info["composite_cri"] = cri.cri
             info["performance"] = result.performance_profile
+            info["judge_runs"] = result.judge_runs
             self._populate_dim_info(info, cri, dim_field_map)
 
         elif isinstance(result, CRIResult):

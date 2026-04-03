@@ -41,9 +41,7 @@ def _make_mock_llm_factory_sequence(contents: list[str]):
     def factory(temperature: float = 0.0, max_tokens: int = 10) -> MagicMock:
         mock_llm = MagicMock()
         mock_llm.invoke.side_effect = [AIMessage(content=c) for c in contents]
-        mock_llm.ainvoke = AsyncMock(
-            side_effect=[AIMessage(content=c) for c in contents]
-        )
+        mock_llm.ainvoke = AsyncMock(side_effect=[AIMessage(content=c) for c in contents])
         return mock_llm
 
     return factory
@@ -103,6 +101,23 @@ class TestBinaryJudgeInit:
         assert j.num_runs == 5
         assert j.temperature == 0.5
         assert j.max_tokens == 20
+
+    def test_num_runs_zero_raises(self) -> None:
+        with pytest.raises(ValueError, match="num_runs must be >= 1"):
+            BinaryJudge(llm_factory=_make_mock_llm_factory(), num_runs=0)
+
+    def test_num_runs_negative_raises(self) -> None:
+        with pytest.raises(ValueError, match="num_runs must be >= 1"):
+            BinaryJudge(llm_factory=_make_mock_llm_factory(), num_runs=-1)
+
+    def test_num_runs_one_accepted(self) -> None:
+        j = BinaryJudge(llm_factory=_make_mock_llm_factory(), num_runs=1)
+        assert j.num_runs == 1
+
+    def test_even_num_runs_warns(self, caplog: pytest.LogCaptureFixture) -> None:
+        with caplog.at_level(logging.WARNING, logger="cri.judge"):
+            BinaryJudge(llm_factory=_make_mock_llm_factory(), num_runs=2)
+        assert "even" in caplog.text
 
     def test_empty_log_on_init(self) -> None:
         j = BinaryJudge(llm_factory=_make_mock_llm_factory())
@@ -237,6 +252,40 @@ class TestMajorityVote:
         result = await j.judge("chk-5", "Unclear?")
         assert result.verdict is Verdict.NO
         assert all(v is Verdict.NO for v in result.votes)
+
+    async def test_single_run_yes(self) -> None:
+        j = BinaryJudge(llm_factory=_make_mock_llm_factory("YES"), num_runs=1)
+        result = await j.judge("chk-single-y", "Test?")
+        assert result.verdict is Verdict.YES
+        assert len(result.votes) == 1
+        assert result.unanimous is True
+        assert result.agreement_ratio == 1.0
+
+    async def test_single_run_no(self) -> None:
+        j = BinaryJudge(llm_factory=_make_mock_llm_factory("NO"), num_runs=1)
+        result = await j.judge("chk-single-n", "Test?")
+        assert result.verdict is Verdict.NO
+        assert len(result.votes) == 1
+        assert result.unanimous is True
+
+    async def test_even_runs_tie_goes_to_no(self) -> None:
+        j = BinaryJudge(
+            llm_factory=_make_mock_llm_factory_sequence(["YES", "NO"]),
+            num_runs=2,
+        )
+        result = await j.judge("chk-tie", "Tie?")
+        assert result.verdict is Verdict.NO
+        assert result.unanimous is False
+
+    async def test_five_runs_majority(self) -> None:
+        j = BinaryJudge(
+            llm_factory=_make_mock_llm_factory_sequence(["YES", "YES", "YES", "NO", "NO"]),
+            num_runs=5,
+        )
+        result = await j.judge("chk-5runs", "Test?")
+        assert result.verdict is Verdict.YES
+        assert sum(1 for v in result.votes if v is Verdict.YES) == 3
+        assert result.agreement_ratio == 3 / 5
 
 
 # ---------------------------------------------------------------------------

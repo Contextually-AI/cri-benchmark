@@ -37,6 +37,7 @@ class MockBinaryJudge:
     def __init__(self, default_verdict: Verdict = Verdict.YES) -> None:
         self.default_verdict = default_verdict
         self._log: list[JudgmentResult] = []
+        self.num_runs: int = 3
 
     async def judge(self, check_id: str, prompt: str) -> JudgmentResult:
         result = JudgmentResult(

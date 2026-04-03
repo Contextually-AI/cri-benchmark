@@ -44,9 +44,7 @@ class MEIDimension(MetricDimension):
 
         if not gt_facts:
             logger.warning("MEI: no ground-truth facts — returning 0.0 (no data).")
-            return DimensionResult(
-                dimension_name=self.name, score=0.0, passed_checks=0, total_checks=0, details=[]
-            )
+            return DimensionResult(dimension_name=self.name, score=0.0, passed_checks=0, total_checks=0, details=[])
 
         all_stored = adapter.get_events()
         stored_texts = [sf.text for sf in all_stored]
@@ -54,9 +52,7 @@ class MEIDimension(MetricDimension):
 
         if total_stored == 0:
             logger.info("MEI: adapter stored 0 facts — returning 0.0.")
-            return DimensionResult(
-                dimension_name=self.name, score=0.0, passed_checks=0, total_checks=len(gt_facts), details=[]
-            )
+            return DimensionResult(dimension_name=self.name, score=0.0, passed_checks=0, total_checks=len(gt_facts), details=[])
 
         # -- Concurrent chunk coverage scan ------------------------------------
         total_gt = len(gt_facts)
@@ -82,29 +78,37 @@ class MEIDimension(MetricDimension):
         details: list[dict[str, object]] = []
         for idx, (gt_key, gt_value) in enumerate(gt_facts):
             passed = idx in covered
-            details.append({
-                "check_id": f"mei-coverage-{idx}",
-                "gt_key": gt_key,
-                "gt_value": gt_value,
-                "verdict": "YES" if passed else "NO",
-                "passed": passed,
-            })
+            details.append(
+                {
+                    "check_id": f"mei-coverage-{idx}",
+                    "gt_key": gt_key,
+                    "gt_value": gt_value,
+                    "verdict": "YES" if passed else "NO",
+                    "passed": passed,
+                }
+            )
 
         covered_count = len(covered)
         coverage = covered_count / total_gt
 
-        details.append({
-            "summary": True,
-            "total_stored_facts": total_stored,
-            "total_gt_facts": total_gt,
-            "covered_gt_facts": covered_count,
-            "coverage": round(coverage, 4),
-            "chunks_scanned": num_chunks,
-        })
+        details.append(
+            {
+                "summary": True,
+                "total_stored_facts": total_stored,
+                "total_gt_facts": total_gt,
+                "covered_gt_facts": covered_count,
+                "coverage": round(coverage, 4),
+                "chunks_scanned": num_chunks,
+            }
+        )
 
         logger.info(
             "MEI: covered=%d/%d gt facts across %d chunks, stored=%d total, MEI=%.4f",
-            covered_count, total_gt, num_chunks, total_stored, coverage,
+            covered_count,
+            total_gt,
+            num_chunks,
+            total_stored,
+            coverage,
         )
 
         return DimensionResult(

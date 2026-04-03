@@ -33,7 +33,7 @@ This is critical for memory systems that go beyond naive RAG or append-only logs
 
 - 🎯 **Six scored dimensions** — each measuring a distinct property of memory behavior
 - ⚖️ **Transparent composite score** — weighted formula with published justification for every weight
-- 🤖 **LLM-as-judge scoring** — semantic evaluation with 3× majority voting for robust, reproducible verdicts
+- 🤖 **LLM-as-judge scoring** — semantic evaluation with configurable majority voting (`--judge-runs N`, default 3) for robust, reproducible verdicts
 - 🔌 **3-method adapter interface** — based on [UPP](https://github.com/Contextually-AI/upp) (Universal Personalization Protocol), integrate any memory system with minimal effort
 - 📊 **Canonical datasets** — hand-crafted personas for realistic, high-quality evaluation
 - 🛠️ **Dataset generator** — create custom scenarios for your specific use cases
@@ -103,10 +103,55 @@ pip install cri-benchmark
 cri run --adapter full-context --dataset datasets/canonical/persona-1-base --verbose
 ```
 
+Use `--judge-runs` to control the number of independent LLM judge invocations per evaluation check (majority vote). Lower values are faster and cheaper; higher values increase robustness:
+
+```bash
+# Fast single-judge run (no majority vote)
+cri run --adapter full-context --dataset datasets/canonical/persona-1-base --judge-runs 1
+
+# Higher robustness with 5 votes per check
+cri run --adapter full-context --dataset datasets/canonical/persona-1-base --judge-runs 5
+```
+
+Odd values are recommended — with even values, ties resolve to NO.
+
+Use `--dimensions` to run only specific scoring dimensions instead of all six. Pass a comma-separated list of dimension codes:
+
+```bash
+# Evaluate only Profile Accuracy and Dynamic Belief Updating
+cri run --adapter full-context --dataset datasets/canonical/persona-1-base --dimensions PAS,DBU
+
+# Single dimension
+cri run --adapter full-context --dataset datasets/canonical/persona-1-base --dimensions MEI
+```
+
+When `--dimensions` is omitted, all six dimensions are evaluated. Note that `--dimensions` and `--profile` are mutually exclusive.
+
+Use `--cache` to enable disk-based LLM response caching. When the same prompt is sent to the judge, the cached response is returned instantly instead of making a new API call. This is especially useful when running the benchmark repeatedly during development:
+
+```bash
+# First run: calls the LLM API and caches responses
+cri run --adapter full-context --dataset datasets/canonical/persona-1-base --cache
+
+# Subsequent runs: hits the cache, significantly faster and zero API cost
+cri run --adapter full-context --dataset datasets/canonical/persona-1-base --cache
+
+# Custom cache directory
+cri run --adapter full-context --dataset datasets/canonical/persona-1-base --cache --cache-dir /tmp/my-cache
+
+# Clear the cache by deleting the directory
+rm -rf .cri_cache/
+```
+
+Cache invalidation is automatic: the cache key includes the model name, temperature, and max tokens, so changing the model or parameters produces cache misses. The default cache location is `.cri_cache/` in the working directory.
+
 Or with Docker (runs all adapters against all datasets):
 
 ```bash
 ./run.sh --limit 50
+
+# Docker with specific dimensions
+./run.sh --dimensions PAS,DBU,TC --adapter rag
 ```
 
 > For the full step-by-step guide (datasets, adapters, Docker options, saving results), see the [Quick Start Guide](docs/guides/quickstart.md).

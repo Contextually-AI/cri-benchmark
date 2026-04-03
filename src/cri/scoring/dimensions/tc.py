@@ -38,9 +38,7 @@ class TCDimension(MetricDimension):
 
         if not temporal_facts:
             logger.info("TC: no temporal facts — returning 1.0 (vacuous)")
-            return DimensionResult(
-                dimension_name=self.name, score=1.0, passed_checks=0, total_checks=0, details=[]
-            )
+            return DimensionResult(dimension_name=self.name, score=1.0, passed_checks=0, total_checks=0, details=[])
 
         async def _check_one(tf: TemporalFact) -> dict[str, object]:
             check_id = f"tc_{tf.fact_id}"
@@ -51,7 +49,9 @@ class TCDimension(MetricDimension):
                 check_id,
                 fact_texts,
                 lambda chunk, _desc=tf.description, _cur=tf.should_be_current: tc_temporal_validity_check(  # type: ignore[misc]
-                    fact_description=_desc, expected_current=_cur, stored_facts=chunk,
+                    fact_description=_desc,
+                    expected_current=_cur,
+                    stored_facts=chunk,
                 ),
             )
 
@@ -64,7 +64,10 @@ class TCDimension(MetricDimension):
 
             logger.debug(
                 "TC check %s: should_be_current=%s verdict=%s passed=%s",
-                check_id, tf.should_be_current, result.verdict.value, check_passed,
+                check_id,
+                tf.should_be_current,
+                result.verdict.value,
+                check_passed,
             )
 
             return {
