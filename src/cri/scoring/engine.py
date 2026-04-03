@@ -12,6 +12,7 @@ populated :class:`~cri.models.BenchmarkResult`.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from datetime import UTC, datetime
@@ -26,15 +27,12 @@ from cri.models import (
     PerformanceProfile,
     ScoringConfig,
 )
-from cri.scoring.dimensions.ars import ARSDimension
 from cri.scoring.dimensions.base import MetricDimension
 from cri.scoring.dimensions.crq import CRQDimension
 from cri.scoring.dimensions.dbu import DBUDimension
-from cri.scoring.dimensions.lnc import LNCDimension
 from cri.scoring.dimensions.mei import MEIDimension
 from cri.scoring.dimensions.pas import ProfileAccuracyScore
 from cri.scoring.dimensions.qrp import QRPDimension
-from cri.scoring.dimensions.sfc import SFCDimension
 from cri.scoring.dimensions.tc import TCDimension
 
 logger = logging.getLogger(__name__)
@@ -50,9 +48,6 @@ _DEFAULT_DIMENSION_REGISTRY: dict[str, type[MetricDimension]] = {
     "CRQ": CRQDimension,
     "QRP": QRPDimension,
     "MEI": MEIDimension,
-    "SFC": SFCDimension,
-    "LNC": LNCDimension,
-    "ARS": ARSDimension,
 }
 
 
@@ -88,7 +83,7 @@ class ScoringEngine:
             evaluation of adapter responses.
         config: Scoring configuration controlling weights and enabled
             dimensions.  Defaults to :class:`ScoringConfig` with standard
-            weights for all 9 dimensions.
+            weights for all 6 dimensions.
 
     Raises:
         ValueError: If the configured dimension weights do not sum to
@@ -153,21 +148,20 @@ class ScoringEngine:
         run_id = str(uuid.uuid4())
         started_at = datetime.now(UTC).isoformat()
 
-        # -- Score each enabled dimension ------------------------------------
+        # -- Score all enabled dimensions concurrently ------------------------
         dimension_results: dict[str, DimensionResult] = {}
 
-        for dim_name in self.config.enabled_dimensions:
+        async def _score_one(dim_name: str) -> tuple[str, DimensionResult | None]:
             scorer = self.dimension_registry.get(dim_name)
             if scorer is None:
                 logger.warning(
                     "Dimension %r is enabled but has no registered scorer — skipping.",
                     dim_name,
                 )
-                continue
-
+                return dim_name, None
             try:
                 result = await scorer.score(adapter, self.ground_truth, self.judge)
-                dimension_results[dim_name] = result
+                return dim_name, result
             except Exception as exc:
                 logger.warning(
                     "Dimension %r scorer raised %s: %s — recording 0.0",
@@ -175,13 +169,20 @@ class ScoringEngine:
                     type(exc).__name__,
                     exc,
                 )
-                dimension_results[dim_name] = DimensionResult(
+                return dim_name, DimensionResult(
                     dimension_name=dim_name,
                     score=0.0,
                     passed_checks=0,
                     total_checks=0,
                     details=[{"error": str(exc)}],
                 )
+
+        pairs = await asyncio.gather(
+            *[_score_one(d) for d in self.config.enabled_dimensions]
+        )
+        for dim_name, result in pairs:
+            if result is not None:
+                dimension_results[dim_name] = result
 
         # -- Compute composite CRI score ------------------------------------
         composite_cri = self._compute_composite(dimension_results)
@@ -202,9 +203,6 @@ class ScoringEngine:
             crq=round(dimension_results.get("CRQ", _zero).score, 4),
             qrp=round(dimension_results.get("QRP", _zero).score, 4),
             mei=round(dimension_results.get("MEI", _zero).score, 4),
-            sfc=round(dimension_results.get("SFC", _zero).score, 4),
-            lnc=round(dimension_results.get("LNC", _zero).score, 4),
-            ars=round(dimension_results.get("ARS", _zero).score, 4),
             dimension_weights=dict(self.config.dimension_weights),
             details=dimension_results,
         )

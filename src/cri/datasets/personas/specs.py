@@ -10,8 +10,6 @@ memory systems. Each persona includes:
 - Conflict scenarios (contradictory information)
 - Temporal facts (time-bounded knowledge)
 - Query-relevance pairs (retrieval precision tests)
-- Forgettable facts (ephemeral/superseded information for SFC evaluation)
-
 Complexity levels:
 
 - **Basic**: Simple persona with clear attributes and a few changes.
@@ -37,7 +35,6 @@ from pydantic import BaseModel, Field
 from cri.models import (
     BeliefChange,
     ConflictScenario,
-    ForgettableFact,
     NoiseExample,
     ProfileDimension,
     QueryRelevancePair,
@@ -59,7 +56,7 @@ class RichPersonaSpec(BaseModel):
     conflict scenarios, temporal facts, and query-relevance pairs.
     """
 
-    persona_id: str = Field(description="Unique identifier for this persona (e.g. 'persona-1-basic')")
+    persona_id: str = Field(description="Unique identifier for this persona (e.g. 'persona-1-base')")
     name: str = Field(description="Human-readable persona name")
     description: str = Field(description="Brief narrative description of the persona's background")
     complexity_level: Literal["basic", "intermediate", "advanced"] = Field(description="Benchmark complexity tier")
@@ -90,11 +87,6 @@ class RichPersonaSpec(BaseModel):
         default_factory=list,
         description="Query-relevance pairs for QRP evaluation",
     )
-    forgettable_facts: list[ForgettableFact] = Field(
-        default_factory=list,
-        description="Facts that should be forgotten/discarded by end of conversation",
-    )
-
     # Generation parameters
     simulated_days: int = Field(
         default=90,
@@ -449,29 +441,6 @@ PERSONA_BASIC = RichPersonaSpec(
             query="How does Alex communicate?",
             expected_relevant_facts=["casual and friendly", "uses emojis"],
             expected_irrelevant_facts=["data analyst", "Luna"],
-        ),
-    ],
-    forgettable_facts=[
-        ForgettableFact(
-            fact_id="ff-basic-01",
-            text="Alex lived in San Francisco, California",
-            reason="fully_superseded",
-            mentioned_at_message=50,
-            should_be_absent_after=210,
-        ),
-        ForgettableFact(
-            fact_id="ff-basic-02",
-            text="Alex was an omnivore",
-            reason="fully_superseded",
-            mentioned_at_message=30,
-            should_be_absent_after=510,
-        ),
-        ForgettableFact(
-            fact_id="ff-basic-03",
-            text="Alex is feeling stressed about the move",
-            reason="ephemeral_state",
-            mentioned_at_message=190,
-            should_be_absent_after=300,
         ),
     ],
 )
@@ -1014,43 +983,6 @@ PERSONA_INTERMEDIATE = RichPersonaSpec(
             query="What is Sarah's nationality?",
             expected_relevant_facts=["American"],
             expected_irrelevant_facts=["Portland", "marketing", "keto"],
-        ),
-    ],
-    forgettable_facts=[
-        ForgettableFact(
-            fact_id="ff-int-01",
-            text="Sarah was a Marketing Director at an agency in Chicago",
-            reason="fully_superseded",
-            mentioned_at_message=100,
-            should_be_absent_after=800,
-        ),
-        ForgettableFact(
-            fact_id="ff-int-02",
-            text="Sarah lived in Chicago",
-            reason="fully_superseded",
-            mentioned_at_message=50,
-            should_be_absent_after=700,
-        ),
-        ForgettableFact(
-            fact_id="ff-int-03",
-            text="Sarah was training for a marathon",
-            reason="fully_superseded",
-            mentioned_at_message=300,
-            should_be_absent_after=1200,
-        ),
-        ForgettableFact(
-            fact_id="ff-int-04",
-            text="Sarah followed a keto diet",
-            reason="fully_superseded",
-            mentioned_at_message=200,
-            should_be_absent_after=1000,
-        ),
-        ForgettableFact(
-            fact_id="ff-int-05",
-            text="Sarah is nervous about leaving her agency job",
-            reason="ephemeral_state",
-            mentioned_at_message=650,
-            should_be_absent_after=900,
         ),
     ],
 )
@@ -1808,57 +1740,6 @@ PERSONA_ADVANCED = RichPersonaSpec(
                 "prefers phone calls",
             ],
             expected_irrelevant_facts=["woodworking", "flexitarian"],
-        ),
-    ],
-    forgettable_facts=[
-        ForgettableFact(
-            fact_id="ff-adv-01",
-            text="Marcus was married to Elena",
-            reason="fully_superseded",
-            mentioned_at_message=100,
-            should_be_absent_after=600,
-        ),
-        ForgettableFact(
-            fact_id="ff-adv-02",
-            text="Marcus worked as an architect at a large firm in NYC",
-            reason="fully_superseded",
-            mentioned_at_message=50,
-            should_be_absent_after=800,
-        ),
-        ForgettableFact(
-            fact_id="ff-adv-03",
-            text="Marcus lived in New York City",
-            reason="fully_superseded",
-            mentioned_at_message=30,
-            should_be_absent_after=1000,
-        ),
-        ForgettableFact(
-            fact_id="ff-adv-04",
-            text="Marcus lived in Austin, Texas",
-            reason="fully_superseded",
-            mentioned_at_message=800,
-            should_be_absent_after=2000,
-        ),
-        ForgettableFact(
-            fact_id="ff-adv-05",
-            text="Marcus followed a strict vegan diet",
-            reason="fully_superseded",
-            mentioned_at_message=600,
-            should_be_absent_after=2200,
-        ),
-        ForgettableFact(
-            fact_id="ff-adv-06",
-            text="Marcus is feeling overwhelmed by the divorce",
-            reason="ephemeral_state",
-            mentioned_at_message=500,
-            should_be_absent_after=800,
-        ),
-        ForgettableFact(
-            fact_id="ff-adv-07",
-            text="Marcus is temporarily staying at a friend's place in Austin",
-            reason="session_context",
-            mentioned_at_message=850,
-            should_be_absent_after=1100,
         ),
     ],
 )

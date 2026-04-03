@@ -6,7 +6,7 @@ Tests both the new DBUDimension (MetricDimension) and the legacy DBUScorer.
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 from cri.models import (
     BeliefChange,
@@ -65,11 +65,17 @@ def _make_judge(verdicts: dict[str, Verdict]) -> MagicMock:
     """
     judge = MagicMock()
 
-    def _judge_side_effect(check_id: str, prompt: str) -> JudgmentResult:
+    async def _judge_side_effect(check_id: str, prompt: str) -> JudgmentResult:
         v = verdicts.get(check_id, Verdict.NO)
         return _make_judgment(check_id, v)
 
-    judge.judge.side_effect = _judge_side_effect
+    async def _chunks_side_effect(check_id: str, stored_facts: list[str], prompt_builder) -> JudgmentResult:
+        prompt_builder(stored_facts)
+        v = verdicts.get(check_id, Verdict.NO)
+        return _make_judgment(check_id, v)
+
+    judge.judge = AsyncMock(side_effect=_judge_side_effect)
+    judge.judge_across_chunks = AsyncMock(side_effect=_chunks_side_effect)
     return judge
 
 
@@ -328,7 +334,7 @@ class TestDBUDimension:
 
         asyncio.get_event_loop().run_until_complete(DBUDimension().score(adapter, gt, judge))
 
-        check_ids = [c.args[0] for c in judge.judge.call_args_list]
+        check_ids = [c.args[0] for c in judge.judge_across_chunks.call_args_list]
         assert check_ids == ["dbu_recency_0", "dbu_staleness_0"]
 
     def test_judge_receives_rubric_prompts(self) -> None:
@@ -355,8 +361,14 @@ class TestDBUDimension:
         asyncio.get_event_loop().run_until_complete(DBUDimension().score(adapter, gt, judge))
 
         # Check that the prompts contain expected content
-        recency_prompt = judge.judge.call_args_list[0].args[1]
-        staleness_prompt = judge.judge.call_args_list[1].args[1]
+        # judge_across_chunks receives (check_id, stored_facts, prompt_builder)
+        # Build the prompts from the captured prompt_builder calls
+        calls = judge.judge_across_chunks.call_args_list
+        recency_call = calls[0]
+        staleness_call = calls[1]
+
+        recency_prompt = recency_call.args[2](recency_call.args[1])
+        staleness_prompt = staleness_call.args[2](staleness_call.args[1])
 
         # Recency prompt should mention the new value
         assert "Manager" in recency_prompt

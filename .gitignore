@@ -66,3 +66,6 @@ uv.lock
 
 
 logs/*
+
+# Audit files
+audit-persona-*.md

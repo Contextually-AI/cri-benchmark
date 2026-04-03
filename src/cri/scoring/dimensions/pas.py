@@ -2,19 +2,17 @@
 
 Measures how accurately the memory system recalls specific persona
 details after ingesting events about a user. This is the most
-fundamental dimension — a memory system must at minimum be able
+fundamental dimension -- a memory system must at minimum be able
 to accurately recall what it has been told.
 
-Two implementations are provided:
-
-- :class:`ProfileAccuracyScore` — New binary-verdict scorer based on
-  :class:`~cri.scoring.dimensions.base.MetricDimension`. Uses
-  :class:`~cri.judge.BinaryJudge` with the :func:`~cri.scoring.rubrics.pas_check`
-  rubric to evaluate each profile dimension independently.
+:class:`ProfileAccuracyScore` uses :class:`~cri.judge.BinaryJudge` with
+the :func:`~cri.scoring.rubrics.pas_check` rubric to evaluate each
+profile dimension independently.  All checks run **concurrently**.
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING
 
@@ -30,33 +28,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# New binary-verdict scorer — ProfileAccuracyScore
-# ---------------------------------------------------------------------------
-
-
 class ProfileAccuracyScore(MetricDimension):
     """Binary-verdict scorer for the Profile Accuracy Score dimension.
 
-    Evaluates factual recall accuracy by checking whether each expected
-    profile dimension value is semantically present in the facts stored
-    by the memory system.
-
-    **Algorithm**:
-
-    For every :class:`~cri.models.ProfileDimension` in
-    ``ground_truth.final_profile``:
-
-    1. Query the adapter for facts related to the dimension's ``query_topic``.
-    2. If the dimension value is a list (multi-value dimension), create one
-       binary check per list element.  Otherwise create a single check.
-    3. For each check, generate an LLM judge prompt via
-       :func:`~cri.scoring.rubrics.pas_check` and evaluate it using the
-       :class:`~cri.judge.BinaryJudge`.
-    4. A ``YES`` verdict means the check passed (the fact was found).
-
-    The dimension score is ``passed_checks / total_checks`` (0.0 when no
-    checks exist).
+    All individual profile checks run concurrently for maximum throughput.
     """
 
     name: str = "PAS"
@@ -73,75 +48,71 @@ class ProfileAccuracyScore(MetricDimension):
         ground_truth: GroundTruth,
         judge: BinaryJudge,
     ) -> DimensionResult:
-        """Evaluate persona recall accuracy across all profile dimensions.
+        """Evaluate persona recall accuracy across all profile dimensions."""
 
-        Args:
-            adapter: The memory system under evaluation.
-            ground_truth: Expected outcomes containing the final profile.
-            judge: A binary verdict judge for semantic evaluation.
+        async def _check_one(
+            check_id: str,
+            fact_texts: list[str],
+            dim_display_name: str,
+            dim_name: str,
+            expected_value: str,
+        ) -> dict[str, object]:
+            result = await judge.judge_across_chunks(
+                check_id,
+                fact_texts,
+                lambda chunk, _dim=dim_display_name, _val=expected_value: pas_check(  # type: ignore[misc]
+                    dimension=_dim,
+                    gold_answer=_val,
+                    stored_facts=chunk,
+                ),
+            )
+            passed = result.verdict == Verdict.YES
+            logger.debug("PAS check %s: expected=%r verdict=%s", check_id, expected_value, result.verdict.value)
+            return {
+                "check_id": check_id,
+                "dimension_name": dim_name,
+                "expected_value": expected_value,
+                "verdict": result.verdict.value,
+                "passed": passed,
+            }
 
-        Returns:
-            A :class:`~cri.models.DimensionResult` with the PAS score.
-        """
-        details: list[dict[str, object]] = []
-        passed_count = 0
-        total_count = 0
+        # Build all tasks up front.
+        tasks: list[asyncio.Task[dict[str, object]]] = []
 
         for dim_name, profile_dim in ground_truth.final_profile.items():
-            # Retrieve facts relevant to this profile dimension
             stored_facts = adapter.retrieve(profile_dim.query_topic)
             fact_texts = [sf.text for sf in stored_facts]
 
-            # Determine values to check
             if isinstance(profile_dim.value, list):
-                is_multi = True
                 values: list[str] = profile_dim.value
+                for idx, val in enumerate(values):
+                    cid = f"pas-{dim_name}-{idx}"
+                    tasks.append(
+                        asyncio.create_task(
+                            _check_one(cid, fact_texts, profile_dim.dimension_name, dim_name, val)
+                        )
+                    )
             else:
-                is_multi = False
-                values = [profile_dim.value]
-
-            for idx, expected_value in enumerate(values):
-                # Build check ID
-                check_id = f"pas-{dim_name}-{idx}" if is_multi else f"pas-{dim_name}"
-
-                # Generate the judge prompt using the pas_check rubric
-                prompt = pas_check(
-                    dimension=profile_dim.dimension_name,
-                    gold_answer=expected_value,
-                    stored_facts=fact_texts,
+                cid = f"pas-{dim_name}"
+                tasks.append(
+                    asyncio.create_task(
+                        _check_one(cid, fact_texts, profile_dim.dimension_name, dim_name, profile_dim.value)
+                    )
                 )
 
-                # Evaluate with the binary judge (synchronous call)
-                result = judge.judge(check_id, prompt)
-                passed = result.verdict == Verdict.YES
+        if not tasks:
+            return DimensionResult(dimension_name=self.name, score=0.0, passed_checks=0, total_checks=0, details=[])
 
-                if passed:
-                    passed_count += 1
-                total_count += 1
+        details_list = await asyncio.gather(*tasks)
 
-                details.append(
-                    {
-                        "check_id": check_id,
-                        "dimension_name": dim_name,
-                        "expected_value": expected_value,
-                        "verdict": result.verdict.value,
-                        "passed": passed,
-                    }
-                )
-
-                logger.debug(
-                    "PAS check %s: expected=%r verdict=%s",
-                    check_id,
-                    expected_value,
-                    result.verdict.value,
-                )
-
-        score = passed_count / total_count if total_count > 0 else 0.0
+        passed_count = sum(1 for d in details_list if d["passed"])
+        total_count = len(details_list)
+        score_val = passed_count / total_count if total_count > 0 else 0.0
 
         return DimensionResult(
             dimension_name=self.name,
-            score=score,
+            score=score_val,
             passed_checks=passed_count,
             total_checks=total_count,
-            details=details,
+            details=list(details_list),
         )

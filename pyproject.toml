@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cri-benchmark"
-version = "0.1.0"
+version = "0.1.1"
 description = "CRI Benchmark — Contextual Resonance Index: An open-source benchmark for evaluating AI long-term memory systems"
 readme = "README.md"
 license = "MIT"

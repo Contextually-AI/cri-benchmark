@@ -31,11 +31,15 @@ from cri.scoring.dimensions.tc import TCDimension
 # ---------------------------------------------------------------------------
 
 
+_DEFAULT_TC_FACTS = [StoredFact(text="placeholder fact for testing")]
+
+
 class MockTCAdapter:
     """Mock adapter that returns predetermined facts per query topic.
 
     Facts are configured via the *facts_by_topic* mapping. Topics not
-    present in the mapping return an empty list.
+    present in the mapping return a default non-empty fact list so that
+    the judge evaluation path is exercised.
     """
 
     def __init__(self, facts_by_topic: dict[str, list[StoredFact]] | None = None) -> None:
@@ -44,7 +48,7 @@ class MockTCAdapter:
 
     def retrieve(self, topic: str) -> list[StoredFact]:
         self.queries.append(topic)
-        return self.facts_by_topic.get(topic, [])
+        return self.facts_by_topic.get(topic, list(_DEFAULT_TC_FACTS))
 
     def get_events(self) -> list[StoredFact]:
         all_facts: list[StoredFact] = []
@@ -68,7 +72,7 @@ class MockTCJudge:
         self.overrides = overrides or {}
         self.call_log: list[dict[str, Any]] = []
 
-    def judge(self, check_id: str, prompt: str) -> JudgmentResult:
+    async def judge(self, check_id: str, prompt: str) -> JudgmentResult:
         verdict = self.overrides.get(check_id, self.default_verdict)
         self.call_log.append({"check_id": check_id, "prompt": prompt})
         return JudgmentResult(
@@ -79,6 +83,10 @@ class MockTCJudge:
             prompt=prompt,
             raw_responses=[verdict.value] * 3,
         )
+
+    async def judge_across_chunks(self, check_id: str, stored_facts: list[str], prompt_builder) -> JudgmentResult:
+        prompt = prompt_builder(stored_facts)
+        return await self.judge(check_id, prompt)
 
 
 def _make_ground_truth(temporal_facts: list[TemporalFact] | None = None) -> GroundTruth:
@@ -578,7 +586,7 @@ class TestTCDimension:
         assert adapter.queries == ["topic alpha", "topic beta", "topic gamma"]
 
     def test_empty_adapter_response(self) -> None:
-        """When adapter returns no facts, checks still run."""
+        """When adapter returns no facts, all checks fail (no knowledge)."""
         facts = [
             _make_temporal_fact(
                 fact_id="tf-empty",
@@ -586,14 +594,15 @@ class TestTCDimension:
                 should_be_current=True,
             ),
         ]
-        adapter = MockTCAdapter()  # returns empty lists
+        # Explicitly return empty for this specific topic
+        adapter = MockTCAdapter(facts_by_topic={"nonexistent topic": []})
         judge = MockTCJudge(default_verdict=Verdict.NO)
         gt = _make_ground_truth(temporal_facts=facts)
 
         result = _run(TCDimension().score(adapter, gt, judge))
 
         assert result.total_checks == 1
-        assert result.passed_checks == 0  # NO for current = fail
+        assert result.passed_checks == 0  # No stored facts → fail
         assert result.details[0]["num_stored_facts"] == 0
 
     def test_adapter_with_many_facts(self) -> None:

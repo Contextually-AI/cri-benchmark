@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Generate canonical CRI benchmark datasets from persona specifications.
 
-This script creates structurally complete datasets for all three canonical
-personas (basic, intermediate, advanced). Each dataset directory gets:
+This script creates structurally complete datasets from persona specifications.
+Each dataset directory gets:
   - conversations.jsonl  — One Message JSON per line
   - ground_truth.json    — Complete GroundTruth JSON object
   - metadata.json        — DatasetMetadata JSON object
@@ -12,7 +12,6 @@ requiring an LLM. They exercise all metric dimensions:
   - PAS (Persona Accuracy Score): via signal messages establishing profile facts
   - DBU (Dynamic Belief Updating): via messages that update beliefs
   - MEI (Memory Efficiency Index): via coverage and efficiency evaluation
-  - SFC (Selective Forgetting Capability): via ephemeral/superseded facts
   - TC (Temporal Coherence): via temporal fact introductions with timestamps
   - CRQ (Conflict Resolution Quality): via conflicting statements at specific points
   - QRP (Query Response Precision): ground truth pairs for retrieval eval
@@ -106,16 +105,11 @@ def _generate_belief_change_messages(
     pairs.append((old_msg, f"That's great to hear, {persona.name}!"))
 
     # Transition message
-    transition_msg = (
-        f"Actually, things have changed. I'm no longer {change.old_value}. "
-        f"I've switched to {change.new_value}."
-    )
+    transition_msg = f"Actually, things have changed. I'm no longer {change.old_value}. I've switched to {change.new_value}."
     pairs.append((transition_msg, "Thanks for the update! I'll keep that in mind."))
 
     # Confirmation message
-    confirm_msg = (
-        f"Yeah, {change.new_value} is definitely where I'm at now regarding {change.fact}."
-    )
+    confirm_msg = f"Yeah, {change.new_value} is definitely where I'm at now regarding {change.fact}."
     pairs.append((confirm_msg, "Noted! Glad you're happy with the change."))
 
     return pairs
@@ -130,9 +124,7 @@ def _generate_conflict_messages(
     results = []
 
     for i, statement in enumerate(conflict.conflicting_statements):
-        target_id = (
-            conflict.introduced_at_messages[i] if i < len(conflict.introduced_at_messages) else 0
-        )
+        target_id = conflict.introduced_at_messages[i] if i < len(conflict.introduced_at_messages) else 0
         asst = f"I see, thanks for sharing that about {conflict.topic}."
         results.append((statement, asst, target_id))
 
@@ -149,9 +141,7 @@ def _generate_temporal_messages(
             msg = f"Currently, {tf.description.lower()} — specifically, {tf.value}."
             pairs.append((msg, "Got it, thanks for the update!"))
         else:
-            msg = (
-                f"Back when {tf.description.lower()}, it was {tf.value}. That's changed now though."
-            )
+            msg = f"Back when {tf.description.lower()}, it was {tf.value}. That's changed now though."
             pairs.append((msg, "Interesting to hear about that history."))
     return pairs
 
@@ -375,7 +365,7 @@ def generate_readme(datasets_dir: Path, all_stats: list[dict]) -> None:
 This directory contains the canonical benchmark datasets for the
 **Contextual Resonance Index (CRI)** benchmark. Each dataset represents
 a simulated multi-session conversation with a fictional persona, designed
-to exercise all seven CRI evaluation dimensions.
+to exercise all six CRI evaluation dimensions.
 
 ## Dataset Format
 
@@ -434,7 +424,7 @@ The ground truth file contains:
 
     readme += """## CRI Evaluation Dimensions Covered
 
-Each dataset exercises all seven dimensions:
+Each dataset exercises all six dimensions:
 
 | Dimension | Code | Exercised By |
 |-----------|------|-------------|
@@ -444,7 +434,6 @@ Each dataset exercises all seven dimensions:
 | Temporal Coherence | TC | Temporal facts with valid_from/valid_until |
 | Conflict Resolution Quality | CRQ | Conflicting statements at specific points |
 | Query Response Precision | QRP | Query-relevance pairs with expected results |
-| Selective Forgetting Capability | SFC | Ephemeral/superseded facts that should be absent |
 
 ## Loading Datasets
 
@@ -457,7 +446,7 @@ for ds in datasets:
     print(f"{ds.name}: {ds.message_count} messages, GT={ds.has_ground_truth}")
 
 # Load a specific dataset
-dataset = load_dataset("datasets/canonical/persona-1-basic")
+dataset = load_dataset("datasets/canonical/persona-1-base")
 print(f"Messages: {len(dataset.messages)}")
 print(f"Profile dims: {len(dataset.ground_truth.final_profile)}")
 ```

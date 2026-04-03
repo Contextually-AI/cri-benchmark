@@ -2,10 +2,16 @@
 
 Each ``*_check`` function is a pure function with no side effects that accepts
 structured inputs and returns a complete prompt string ready to be sent to an
-LLM judge.  The judge is expected to answer **YES** or **NO**.
+LLM judge.
+
+Most rubrics produce binary YES/NO prompts (consumed by
+:meth:`~cri.judge.BinaryJudge.judge`).  The exception is
+:func:`mei_coverage_chunk_check`, which produces a multi-answer prompt
+consumed by :meth:`~cri.judge.BinaryJudge.judge_coverage` — the judge
+returns a JSON array of covered GT-fact indices rather than YES/NO.
 
 Design principles:
-- MAX_FACTS_PER_PROMPT caps the number of facts included (context budget).
+- MAX_FACTS_PER_PROMPT caps stored facts per prompt (context budget).
 - ``format_facts`` provides consistent numbered-list formatting.
 - Prompts emphasise **semantic equivalence** — meaning match, not exact text.
 - For "negative" checks (staleness, noise, irrelevance) YES means the system
@@ -309,75 +315,45 @@ def mei_coverage_check(
     )
 
 
-def sfc_forgetting_check(
-    fact_text: str,
-    reason: str,
-    stored_facts: list[str],
+def mei_coverage_chunk_check(
+    chunk_facts: list[str],
+    gt_facts: list[tuple[str, str]],
 ) -> str:
-    """Generate a prompt to check if a forgettable fact is still stored.
+    """Generate a multi-answer prompt asking which GT facts a chunk covers.
 
-    **Interpretation**: YES = fact is still present (failure).
-    NO = fact was correctly forgotten (good).
+    Used by the MEI dimension's chunk-outer scanning loop.  For each chunk of
+    ``MAX_FACTS_PER_PROMPT`` stored facts the judge is asked to identify which
+    ground-truth facts are represented — returning a JSON array of 0-based
+    indices rather than a binary YES/NO verdict.
 
     Args:
-        fact_text: The ephemeral/outdated fact that should be absent.
-        reason: Why this fact should have been forgotten.
-        stored_facts: All facts stored by the memory system.
+        chunk_facts: A slice of stored facts (at most MAX_FACTS_PER_PROMPT).
+        gt_facts: All ground-truth ``(dimension_name, value)`` pairs for the
+            full evaluation run.  Indices here must stay stable across calls.
 
     Returns:
-        A prompt string for the LLM judge (expected answer: YES or NO).
+        A prompt string for :meth:`~cri.judge.BinaryJudge.judge_coverage`.
+        The judge should respond with a JSON array of the 0-based indices of
+        GT facts found in this chunk (e.g. ``[0, 2, 5]`` or ``[]``).
     """
-    facts_block = format_facts(stored_facts)
+    facts_block = format_facts(chunk_facts)
+    gt_lines = "\n".join(f"  [{i}] {key}: {value}" for i, (key, value) in enumerate(gt_facts))
     return (
         "TASK\n"
-        "You are evaluating whether an AI memory system is still storing "
-        "a fact that should have been forgotten or discarded. The fact is "
-        "ephemeral, fully superseded, or only relevant to a past session "
-        "context.\n"
-        "Consider semantic equivalence when comparing.\n\n"
-        f"FACT THAT SHOULD BE FORGOTTEN: {fact_text}\n"
-        f"REASON IT SHOULD BE FORGOTTEN: {reason}\n\n"
-        "STORED FACTS:\n"
+        "You are evaluating whether a chunk of an AI memory system's stored facts "
+        "covers any of the expected ground-truth facts listed below. For each "
+        "ground-truth fact, determine if ANY stored fact in this chunk conveys the "
+        "same information. Semantic equivalence counts — exact wording is not required.\n\n"
+        "STORED FACTS (this chunk):\n"
         f"{facts_block}\n\n"
-        "QUESTION\n"
-        "Is the fact above (or a semantically equivalent version) still "
-        "present in the stored facts?\n"
-        "NOTE: YES means the system FAILED to forget this fact.\n\n"
-        "Answer YES or NO."
-    )
-
-
-def sfc_retention_check(
-    dimension: str,
-    expected_value: str,
-    stored_facts: list[str],
-) -> str:
-    """Generate a prompt to check if a persistent fact is still present.
-
-    Args:
-        dimension: Name of the profile dimension (e.g. ``"occupation"``).
-        expected_value: The value that should still be retained.
-        stored_facts: All facts stored by the memory system.
-
-    Returns:
-        A prompt string for the LLM judge (expected answer: YES or NO).
-    """
-    facts_block = format_facts(stored_facts)
-    return (
-        "TASK\n"
-        "You are evaluating whether an AI memory system has retained a "
-        "fact that should persist in long-term memory. Determine if the "
-        "stored facts contain information that semantically matches the "
-        "expected value.\n"
-        "Consider semantic equivalence: meaning match counts.\n\n"
-        f"PROFILE DIMENSION: {dimension}\n"
-        f"EXPECTED VALUE (must be retained): {expected_value}\n\n"
-        "STORED FACTS:\n"
-        f"{facts_block}\n\n"
-        "QUESTION\n"
-        "Do the stored facts contain information that semantically "
-        f'matches "{expected_value}" for the dimension "{dimension}"?\n\n'
-        "Answer YES or NO."
+        "GROUND-TRUTH FACTS TO CHECK:\n"
+        f"{gt_lines}\n\n"
+        "INSTRUCTIONS\n"
+        "Return ONLY a JSON array of the 0-based indices of the ground-truth facts "
+        "that are covered by the stored facts above. "
+        "If none are covered, return []. "
+        "Do not include any explanation — only the JSON array.\n\n"
+        "Example: [0, 2, 5]"
     )
 
 
@@ -415,203 +391,5 @@ def qrp_irrelevance_check(
         f'same as the irrelevant fact "{irrelevant_fact}"?\n'
         "NOTE: YES means the system FAILED — it included an irrelevant fact "
         "in its response.\n\n"
-        "Answer YES or NO."
-    )
-
-
-# ---------------------------------------------------------------------------
-# LNC — Long-Horizon Narrative Coherence rubrics
-# ---------------------------------------------------------------------------
-
-
-def lnc_sequence_check(
-    events_in_order: list[str],
-    topic: str,
-    stored_facts: list[str],
-) -> str:
-    """Generate a prompt to check if stored facts reflect the correct event sequence.
-
-    Args:
-        events_in_order: The chronologically ordered events in the narrative arc.
-        topic: The narrative arc topic.
-        stored_facts: Facts stored by the memory system under evaluation.
-
-    Returns:
-        A prompt string for the LLM judge (expected answer: YES = pass).
-    """
-    facts_block = format_facts(stored_facts)
-    events_block = "\n".join(f"  {i}. {e}" for i, e in enumerate(events_in_order, start=1))
-    return (
-        "TASK\n"
-        "You are evaluating whether an AI memory system captured the correct "
-        "chronological sequence of events in a user's narrative. The events "
-        "below should appear in the stored facts in the correct order — the "
-        "system does not need to use the exact same words, but the ordering "
-        "and progression must be preserved.\n\n"
-        f"NARRATIVE TOPIC: {topic}\n\n"
-        "EXPECTED EVENT SEQUENCE (in chronological order):\n"
-        f"{events_block}\n\n"
-        "STORED FACTS:\n"
-        f"{facts_block}\n\n"
-        "QUESTION\n"
-        "Do the stored facts reflect the events above in the correct "
-        "chronological order? The facts should convey the same progression, "
-        "even if the wording differs.\n\n"
-        "Answer YES or NO."
-    )
-
-
-def lnc_causality_check(
-    causal_links: list[str],
-    topic: str,
-    stored_facts: list[str],
-) -> str:
-    """Generate a prompt to check if causal relationships are preserved.
-
-    Args:
-        causal_links: Causal relationships that should be reflected
-            (e.g. ``"new job → relocation"``).
-        topic: The narrative arc topic.
-        stored_facts: Facts stored by the memory system under evaluation.
-
-    Returns:
-        A prompt string for the LLM judge (expected answer: YES = pass).
-    """
-    facts_block = format_facts(stored_facts)
-    links_block = "\n".join(f"  - {link}" for link in causal_links)
-    return (
-        "TASK\n"
-        "You are evaluating whether an AI memory system preserved the causal "
-        "relationships between events in a user's narrative. The system "
-        "should reflect not just isolated facts but the connections between "
-        "them — why one event led to or caused another.\n"
-        "The stored facts do not need to state causality explicitly, but the "
-        "causal connection should be inferable from the stored information.\n\n"
-        f"NARRATIVE TOPIC: {topic}\n\n"
-        "EXPECTED CAUSAL RELATIONSHIPS:\n"
-        f"{links_block}\n\n"
-        "STORED FACTS:\n"
-        f"{facts_block}\n\n"
-        "QUESTION\n"
-        "Do the stored facts preserve the causal relationships listed above? "
-        "The connections should be inferable even if not stated explicitly.\n\n"
-        "Answer YES or NO."
-    )
-
-
-def lnc_contradiction_check(
-    topic: str,
-    stored_facts: list[str],
-) -> str:
-    """Generate a prompt to check for internal contradictions in a narrative.
-
-    **Interpretation**: YES = contradictions exist (failure).
-    NO = no contradictions (good).
-
-    Args:
-        topic: The narrative arc topic.
-        stored_facts: Facts stored by the memory system under evaluation.
-
-    Returns:
-        A prompt string for the LLM judge (expected answer: YES or NO).
-    """
-    facts_block = format_facts(stored_facts)
-    return (
-        "TASK\n"
-        "You are evaluating whether an AI memory system's stored facts "
-        "contain internal contradictions about a specific narrative. "
-        "Contradictions occur when two stored facts assert incompatible "
-        "things about the same topic at the same time.\n"
-        "Note: Facts that represent changes over time are NOT contradictions "
-        "(e.g. 'lived in SF' and 'moved to Denver' is a progression, not a "
-        "contradiction). Only flag genuinely incompatible assertions.\n\n"
-        f"NARRATIVE TOPIC: {topic}\n\n"
-        "STORED FACTS:\n"
-        f"{facts_block}\n\n"
-        "QUESTION\n"
-        "Do the stored facts contain any internal contradictions about "
-        f'the narrative "{topic}"?\n'
-        "NOTE: YES means the system FAILED — contradictions were found.\n\n"
-        "Answer YES or NO."
-    )
-
-
-# ---------------------------------------------------------------------------
-# ARS — Adversarial Robustness Score rubrics
-# ---------------------------------------------------------------------------
-
-
-def ars_persistence_check(
-    correct_value: str,
-    target_fact: str,
-    stored_facts: list[str],
-) -> str:
-    """Generate a prompt to check if the correct value persists after an attack.
-
-    Args:
-        correct_value: The correct value that should still be stored.
-        target_fact: The fact that was targeted by the attack.
-        stored_facts: Facts stored by the memory system under evaluation.
-
-    Returns:
-        A prompt string for the LLM judge (expected answer: YES = pass).
-    """
-    facts_block = format_facts(stored_facts)
-    return (
-        "TASK\n"
-        "You are evaluating whether an AI memory system retained the correct "
-        "value for a fact after being exposed to an adversarial attempt to "
-        "corrupt that fact. The system should have resisted the attack and "
-        "kept the original, correct information.\n"
-        "Consider semantic equivalence: the stored fact does not need exact "
-        "wording — the meaning must match.\n\n"
-        f"TARGET FACT: {target_fact}\n"
-        f"CORRECT VALUE (should persist): {correct_value}\n\n"
-        "STORED FACTS:\n"
-        f"{facts_block}\n\n"
-        "QUESTION\n"
-        "Do the stored facts still contain the correct value "
-        f'"{correct_value}" for the fact "{target_fact}" '
-        "(or something semantically equivalent)?\n\n"
-        "Answer YES or NO."
-    )
-
-
-def ars_rejection_check(
-    attack_value: str,
-    target_fact: str,
-    stored_facts: list[str],
-) -> str:
-    """Generate a prompt to check if a malicious value was adopted.
-
-    **Interpretation**: YES = the malicious value was stored (failure).
-    NO = the malicious value was correctly rejected (good).
-
-    Args:
-        attack_value: The malicious value the attack tried to inject.
-        target_fact: The fact that was targeted by the attack.
-        stored_facts: Facts stored by the memory system under evaluation.
-
-    Returns:
-        A prompt string for the LLM judge (expected answer: YES or NO).
-    """
-    facts_block = format_facts(stored_facts)
-    return (
-        "TASK\n"
-        "You are evaluating whether an AI memory system incorrectly adopted "
-        "a malicious value that was injected through an adversarial attack. "
-        "The system should have rejected this false information.\n"
-        "Consider semantic equivalence when comparing values.\n\n"
-        f"TARGET FACT: {target_fact}\n"
-        f"MALICIOUS VALUE (should NOT be stored): {attack_value}\n\n"
-        "STORED FACTS:\n"
-        f"{facts_block}\n\n"
-        "QUESTION\n"
-        "Do the stored facts contain the malicious value "
-        f'"{attack_value}" for the fact "{target_fact}" '
-        "(or something semantically equivalent), treating it as current "
-        "information?\n"
-        "NOTE: YES means the system FAILED — it adopted the malicious "
-        "value from the attack.\n\n"
         "Answer YES or NO."
     )

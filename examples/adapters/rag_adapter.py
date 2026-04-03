@@ -100,10 +100,7 @@ class RAGAdapter:
         try:
             import chromadb
         except ImportError:
-            raise ImportError(
-                "chromadb is required for RAGAdapter. "
-                "Install it with: pip install cri-benchmark[rag]"
-            ) from None
+            raise ImportError("chromadb is required for RAGAdapter. Install it with: pip install cri-benchmark[rag]") from None
 
         self._n_results = n_results
         self._client: Any = chromadb.Client()
@@ -215,12 +212,8 @@ class RAGAdapter:
         facts: list[StoredFact] = []
         if results and results["documents"] and results["documents"][0]:
             documents = results["documents"][0]
-            distances = (
-                results["distances"][0] if results.get("distances") else [None] * len(documents)
-            )
-            metadatas = (
-                results["metadatas"][0] if results.get("metadatas") else [{}] * len(documents)
-            )
+            distances = results["distances"][0] if results.get("distances") else [None] * len(documents)
+            metadatas = results["metadatas"][0] if results.get("metadatas") else [{}] * len(documents)
 
             for doc, dist, meta in zip(documents, distances, metadatas, strict=False):
                 fact_metadata: dict[str, Any] = {}
@@ -257,9 +250,7 @@ class RAGAdapter:
         facts: list[StoredFact] = []
         if all_data and all_data["documents"]:
             documents = all_data["documents"]
-            metadatas = (
-                all_data["metadatas"] if all_data.get("metadatas") else [{}] * len(documents)
-            )
+            metadatas = all_data["metadatas"] if all_data.get("metadatas") else [{}] * len(documents)
 
             for doc, meta in zip(documents, metadatas, strict=False):
                 fact_metadata: dict[str, Any] = {}

@@ -75,5 +75,4 @@ TC requires `temporal_facts` in the ground truth — a list of `TemporalFact` ob
 ## Related Dimensions
 
 - **DBU** — tests fact replacement; TC tests time-bounded validity more broadly
-- **SFC** — tests forgetting of ephemeral facts; TC tests temporal awareness without requiring deletion
 - **CRQ** — tests conflict resolution; some conflicts arise from temporal ambiguity

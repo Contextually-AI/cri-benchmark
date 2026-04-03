@@ -64,7 +64,7 @@ class MockBinaryJudge:
     def __init__(self) -> None:
         self._log: list[JudgmentResult] = []
 
-    def judge(self, check_id: str, prompt: str) -> JudgmentResult:
+    async def judge(self, check_id: str, prompt: str) -> JudgmentResult:
         result = JudgmentResult(
             check_id=check_id,
             verdict=Verdict.YES,
@@ -75,6 +75,14 @@ class MockBinaryJudge:
         )
         self._log.append(result)
         return result
+
+    async def judge_across_chunks(self, check_id: str, stored_facts: list[str], prompt_builder) -> JudgmentResult:
+        prompt = prompt_builder(stored_facts)
+        return await self.judge(check_id, prompt)
+
+    async def judge_coverage(self, check_id: str, stored_facts: list[str], prompt_builder) -> JudgmentResult:
+        prompt = prompt_builder(stored_facts)
+        return await self.judge(check_id, prompt)
 
     def get_log(self) -> list[JudgmentResult]:
         return list(self._log)
@@ -190,10 +198,7 @@ class TestScoringEngineConstruction:
         assert "CRQ" in engine.dimension_registry
         assert "QRP" in engine.dimension_registry
         assert "MEI" in engine.dimension_registry
-        assert "SFC" in engine.dimension_registry
-        assert "LNC" in engine.dimension_registry
-        assert "ARS" in engine.dimension_registry
-        assert len(engine.dimension_registry) == 9
+        assert len(engine.dimension_registry) == 6
 
     def test_invalid_weights_raises(self, minimal_ground_truth: GroundTruth, mock_judge: MockBinaryJudge) -> None:
         config = ScoringConfig(
@@ -877,8 +882,8 @@ class TestJudgeLogIntegration:
     ) -> None:
         """Performance profile should report the number of judge API calls."""
         # Manually add some entries to the judge log
-        mock_judge.judge("test-1", "prompt-1")
-        mock_judge.judge("test-2", "prompt-2")
+        await mock_judge.judge("test-1", "prompt-1")
+        await mock_judge.judge("test-2", "prompt-2")
 
         for dim_name in engine.dimension_registry:
             engine.dimension_registry[dim_name].score = AsyncMock(  # type: ignore[method-assign]
@@ -896,7 +901,7 @@ class TestJudgeLogIntegration:
         mock_judge: MockBinaryJudge,
     ) -> None:
         """Judge log should contain JudgmentResult entries."""
-        mock_judge.judge("pre-run-check", "test prompt")
+        await mock_judge.judge("pre-run-check", "test prompt")
 
         for dim_name in engine.dimension_registry:
             engine.dimension_registry[dim_name].score = AsyncMock(  # type: ignore[method-assign]

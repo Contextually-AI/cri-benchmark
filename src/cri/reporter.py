@@ -46,9 +46,6 @@ _DIMENSION_ORDER: list[Dimension] = [
     Dimension.TC,
     Dimension.CRQ,
     Dimension.QRP,
-    Dimension.SFC,
-    Dimension.LNC,
-    Dimension.ARS,
 ]
 
 _DIMENSION_FULL_NAMES: dict[Dimension, str] = {
@@ -58,9 +55,6 @@ _DIMENSION_FULL_NAMES: dict[Dimension, str] = {
     Dimension.TC: "Temporal Coherence",
     Dimension.CRQ: "Conflict Resolution Quality",
     Dimension.QRP: "Query Response Precision",
-    Dimension.SFC: "Selective Forgetting Capability",
-    Dimension.LNC: "Long-Horizon Narrative Coherence",
-    Dimension.ARS: "Adversarial Robustness Score",
 }
 
 

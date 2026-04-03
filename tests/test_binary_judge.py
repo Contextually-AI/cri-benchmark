@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -22,6 +22,7 @@ def _make_mock_llm(content: str = "YES") -> MagicMock:
     """Create a mock BaseChatModel that returns a fixed response."""
     mock_llm = MagicMock()
     mock_llm.invoke.return_value = AIMessage(content=content)
+    mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content=content))
     return mock_llm
 
 
@@ -40,6 +41,9 @@ def _make_mock_llm_factory_sequence(contents: list[str]):
     def factory(temperature: float = 0.0, max_tokens: int = 10) -> MagicMock:
         mock_llm = MagicMock()
         mock_llm.invoke.side_effect = [AIMessage(content=c) for c in contents]
+        mock_llm.ainvoke = AsyncMock(
+            side_effect=[AIMessage(content=c) for c in contents]
+        )
         return mock_llm
 
     return factory
@@ -56,7 +60,8 @@ def _make_mock_llm_factory_with_errors(side_effects: list):
                 effects.append(effect)
             else:
                 effects.append(AIMessage(content=effect))
-        mock_llm.invoke.side_effect = effects
+        mock_llm.invoke.side_effect = list(effects)
+        mock_llm.ainvoke = AsyncMock(side_effect=list(effects))
         return mock_llm
 
     return factory
@@ -110,7 +115,9 @@ class TestBinaryJudgeInit:
     def test_factory_called_with_temperature_and_max_tokens(self) -> None:
         factory = MagicMock(return_value=_make_mock_llm())
         BinaryJudge(llm_factory=factory, temperature=0.7, max_tokens=15)
-        factory.assert_called_once_with(0.7, 15)
+        assert factory.call_count == 2
+        factory.assert_any_call(0.7, 15)
+        factory.assert_any_call(0.7, 200)
 
 
 # ---------------------------------------------------------------------------
@@ -189,43 +196,45 @@ class TestParseVote:
 class TestMajorityVote:
     """Test majority-vote logic in judge()."""
 
-    def test_majority_yes(self) -> None:
+    async def test_majority_yes(self) -> None:
         j = BinaryJudge(
             llm_factory=_make_mock_llm_factory_sequence(["YES", "YES", "NO"]),
             num_runs=3,
         )
-        result = j.judge("chk-1", "Is sky blue?")
+        result = await j.judge("chk-1", "Is sky blue?")
         assert result.verdict is Verdict.YES
-        assert result.votes == [Verdict.YES, Verdict.YES, Verdict.NO]
+        assert sum(1 for v in result.votes if v is Verdict.YES) == 2
+        assert sum(1 for v in result.votes if v is Verdict.NO) == 1
         assert result.unanimous is False
 
-    def test_majority_no(self) -> None:
+    async def test_majority_no(self) -> None:
         j = BinaryJudge(
             llm_factory=_make_mock_llm_factory_sequence(["YES", "NO", "NO"]),
             num_runs=3,
         )
-        result = j.judge("chk-2", "Is sky green?")
+        result = await j.judge("chk-2", "Is sky green?")
         assert result.verdict is Verdict.NO
-        assert result.votes == [Verdict.YES, Verdict.NO, Verdict.NO]
+        assert sum(1 for v in result.votes if v is Verdict.YES) == 1
+        assert sum(1 for v in result.votes if v is Verdict.NO) == 2
         assert result.unanimous is False
 
-    def test_unanimous_yes(self) -> None:
+    async def test_unanimous_yes(self) -> None:
         j = BinaryJudge(llm_factory=_make_mock_llm_factory("YES"), num_runs=3)
-        result = j.judge("chk-3", "Test?")
+        result = await j.judge("chk-3", "Test?")
         assert result.verdict is Verdict.YES
         assert result.unanimous is True
         assert all(v is Verdict.YES for v in result.votes)
 
-    def test_unanimous_no(self) -> None:
+    async def test_unanimous_no(self) -> None:
         j = BinaryJudge(llm_factory=_make_mock_llm_factory("NO"), num_runs=3)
-        result = j.judge("chk-4", "Test?")
+        result = await j.judge("chk-4", "Test?")
         assert result.verdict is Verdict.NO
         assert result.unanimous is True
         assert all(v is Verdict.NO for v in result.votes)
 
-    def test_all_non_binary_defaults_to_no(self) -> None:
+    async def test_all_non_binary_defaults_to_no(self) -> None:
         j = BinaryJudge(llm_factory=_make_mock_llm_factory("MAYBE"), num_runs=3)
-        result = j.judge("chk-5", "Unclear?")
+        result = await j.judge("chk-5", "Unclear?")
         assert result.verdict is Verdict.NO
         assert all(v is Verdict.NO for v in result.votes)
 
@@ -238,27 +247,28 @@ class TestMajorityVote:
 class TestJudgmentResultFields:
     """Verify the returned JudgmentResult has correct metadata."""
 
-    def test_check_id_preserved(self) -> None:
+    async def test_check_id_preserved(self) -> None:
         j = BinaryJudge(llm_factory=_make_mock_llm_factory("YES"), num_runs=3)
-        result = j.judge("my-check-42", "prompt text")
+        result = await j.judge("my-check-42", "prompt text")
         assert result.check_id == "my-check-42"
 
-    def test_prompt_preserved(self) -> None:
+    async def test_prompt_preserved(self) -> None:
         j = BinaryJudge(llm_factory=_make_mock_llm_factory("YES"), num_runs=3)
-        result = j.judge("c1", "the evaluation prompt")
+        result = await j.judge("c1", "the evaluation prompt")
         assert result.prompt == "the evaluation prompt"
 
-    def test_raw_responses_collected(self) -> None:
+    async def test_raw_responses_collected(self) -> None:
         j = BinaryJudge(
             llm_factory=_make_mock_llm_factory_sequence(["YES", "NO", "YES"]),
             num_runs=3,
         )
-        result = j.judge("c2", "p")
-        assert result.raw_responses == ["YES", "NO", "YES"]
+        result = await j.judge("c2", "p")
+        # With concurrent execution, order may vary; check counts instead.
+        assert sorted(result.raw_responses) == sorted(["NO", "YES", "YES"])
 
-    def test_result_is_judgment_result_type(self) -> None:
+    async def test_result_is_judgment_result_type(self) -> None:
         j = BinaryJudge(llm_factory=_make_mock_llm_factory("NO"), num_runs=3)
-        result = j.judge("c3", "p")
+        result = await j.judge("c3", "p")
         assert isinstance(result, JudgmentResult)
 
 
@@ -270,58 +280,47 @@ class TestJudgmentResultFields:
 class TestErrorHandling:
     """Test API error retry and default behavior."""
 
-    def test_retry_once_on_error_then_recover(self) -> None:
+    async def test_retry_once_on_error_then_recover(self) -> None:
         """First call fails, retry succeeds -> uses successful response."""
         j = BinaryJudge(
             llm_factory=_make_mock_llm_factory_with_errors(
                 [
-                    # Run 1: fail then succeed on retry
+                    # Single run: fail then succeed on retry
                     Exception("API timeout"),
                     "YES",
-                    # Run 2: success
-                    "YES",
-                    # Run 3: success
-                    "NO",
-                ]
-            ),
-            num_runs=3,
-        )
-        result = j.judge("err-1", "test")
-        assert result.verdict is Verdict.YES
-
-    def test_both_attempts_fail_defaults_to_no(self) -> None:
-        """Both attempts fail -> empty string -> NO."""
-        j = BinaryJudge(
-            llm_factory=_make_mock_llm_factory_with_errors(
-                [
-                    Exception("fail 1"),
-                    Exception("fail 2"),
                 ]
             ),
             num_runs=1,
         )
-        result = j.judge("err-2", "test")
+        result = await j.judge("err-1", "test")
+        assert result.verdict is Verdict.YES
+
+    async def test_both_attempts_fail_defaults_to_no(self) -> None:
+        """All retry attempts fail -> empty string -> NO."""
+        j = BinaryJudge(
+            llm_factory=_make_mock_llm_factory_with_errors(
+                [Exception("always fail")] * 5  # _MAX_RETRIES = 5
+            ),
+            num_runs=1,
+        )
+        result = await j.judge("err-2", "test")
         assert result.verdict is Verdict.NO
         assert result.raw_responses == [""]
 
-    def test_mixed_errors_and_successes(self) -> None:
-        """Some runs fail completely, others succeed."""
+    async def test_mixed_errors_and_successes(self) -> None:
+        """Single run: multiple errors then success."""
         j = BinaryJudge(
             llm_factory=_make_mock_llm_factory_with_errors(
                 [
-                    # Run 1: both attempts fail -> ""
+                    # Run 1: two failures then success
                     Exception("fail"),
                     Exception("fail"),
-                    # Run 2: success
-                    "YES",
-                    # Run 3: success
                     "YES",
                 ]
             ),
-            num_runs=3,
+            num_runs=1,
         )
-        result = j.judge("err-3", "test")
-        # Votes: NO (from empty), YES, YES -> majority YES
+        result = await j.judge("err-3", "test")
         assert result.verdict is Verdict.YES
 
 
@@ -333,18 +332,18 @@ class TestErrorHandling:
 class TestGetLog:
     """Test get_log() returns accumulated results."""
 
-    def test_log_accumulates(self) -> None:
+    async def test_log_accumulates(self) -> None:
         j = BinaryJudge(llm_factory=_make_mock_llm_factory("YES"), num_runs=3)
-        j.judge("a", "p1")
-        j.judge("b", "p2")
-        j.judge("c", "p3")
+        await j.judge("a", "p1")
+        await j.judge("b", "p2")
+        await j.judge("c", "p3")
         log = j.get_log()
         assert len(log) == 3
         assert [r.check_id for r in log] == ["a", "b", "c"]
 
-    def test_log_returns_copy(self) -> None:
+    async def test_log_returns_copy(self) -> None:
         j = BinaryJudge(llm_factory=_make_mock_llm_factory("YES"), num_runs=3)
-        j.judge("x", "p")
+        await j.judge("x", "p")
         log1 = j.get_log()
         log2 = j.get_log()
         assert log1 is not log2
@@ -362,10 +361,10 @@ class TestGetLog:
 class TestExportLog:
     """Test export_log() writes valid JSON."""
 
-    def test_export_creates_json_file(self, tmp_path: Path) -> None:
+    async def test_export_creates_json_file(self, tmp_path: Path) -> None:
         j = BinaryJudge(llm_factory=_make_mock_llm_factory("YES"), num_runs=3)
-        j.judge("e1", "prompt1")
-        j.judge("e2", "prompt2")
+        await j.judge("e1", "prompt1")
+        await j.judge("e2", "prompt2")
         out = tmp_path / "log.json"
         j.export_log(out)
         assert out.exists()
@@ -375,9 +374,9 @@ class TestExportLog:
         assert data[0]["check_id"] == "e1"
         assert data[1]["check_id"] == "e2"
 
-    def test_export_json_structure(self, tmp_path: Path) -> None:
+    async def test_export_json_structure(self, tmp_path: Path) -> None:
         j = BinaryJudge(llm_factory=_make_mock_llm_factory("NO"), num_runs=3)
-        j.judge("s1", "some prompt")
+        await j.judge("s1", "some prompt")
         out = tmp_path / "struct.json"
         j.export_log(out)
         data = json.loads(out.read_text())
@@ -402,28 +401,30 @@ class TestExportLog:
 
 
 class TestLLMCallParameters:
-    """Verify BaseChatModel.invoke is called with correct params."""
+    """Verify BaseChatModel.ainvoke is called with correct params."""
 
-    def test_uses_system_prompt(self) -> None:
+    async def test_uses_system_prompt(self) -> None:
         j = BinaryJudge(llm_factory=_make_mock_llm_factory("YES"), num_runs=1)
-        j.judge("p1", "user prompt")
-        messages = j.llm.invoke.call_args[0][0]
+        await j.judge("p1", "user prompt")
+        messages = j.llm.ainvoke.call_args[0][0]
         assert isinstance(messages[0], SystemMessage)
         assert messages[0].content == BINARY_JUDGE_SYSTEM_PROMPT
 
-    def test_uses_user_prompt(self) -> None:
+    async def test_uses_user_prompt(self) -> None:
         j = BinaryJudge(llm_factory=_make_mock_llm_factory("YES"), num_runs=1)
-        j.judge("p1", "my user prompt")
-        messages = j.llm.invoke.call_args[0][0]
+        await j.judge("p1", "my user prompt")
+        messages = j.llm.ainvoke.call_args[0][0]
         assert isinstance(messages[1], HumanMessage)
         assert messages[1].content == "my user prompt"
 
     def test_temperature_and_max_tokens_passed_to_factory(self) -> None:
         factory = MagicMock(return_value=_make_mock_llm())
         BinaryJudge(llm_factory=factory, num_runs=1, temperature=0.5, max_tokens=20)
-        factory.assert_called_once_with(0.5, 20)
+        assert factory.call_count == 2
+        factory.assert_any_call(0.5, 20)
+        factory.assert_any_call(0.5, 200)
 
-    def test_called_num_runs_times(self) -> None:
+    async def test_called_num_runs_times(self) -> None:
         j = BinaryJudge(llm_factory=_make_mock_llm_factory("YES"), num_runs=5)
-        j.judge("p1", "prompt")
-        assert j.llm.invoke.call_count == 5
+        await j.judge("p1", "prompt")
+        assert j.llm.ainvoke.call_count == 5

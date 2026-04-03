@@ -15,15 +15,12 @@ import inspect
 
 from cri.scoring.rubrics import (
     MAX_FACTS_PER_PROMPT,
-    ars_persistence_check,
-    ars_rejection_check,
     crq_resolution_check,
     dbu_recency_check,
     dbu_staleness_check,
     format_facts,
-    lnc_causality_check,
-    lnc_contradiction_check,
-    lnc_sequence_check,
+    mei_coverage_check,
+    mei_coverage_chunk_check,
     pas_check,
     qrp_irrelevance_check,
     qrp_relevance_check,
@@ -48,11 +45,8 @@ ALL_BINARY_RUBRIC_FUNCS = [
     crq_resolution_check,
     qrp_relevance_check,
     qrp_irrelevance_check,
-    lnc_sequence_check,
-    lnc_causality_check,
-    lnc_contradiction_check,
-    ars_persistence_check,
-    ars_rejection_check,
+    mei_coverage_check,
+    mei_coverage_chunk_check,
 ]
 
 
@@ -404,17 +398,18 @@ class TestPromptStructure:
             (crq_resolution_check, ("topic", "resolution", SAMPLE_FACTS)),
             (qrp_relevance_check, ("query", "fact", SAMPLE_FACTS)),
             (qrp_irrelevance_check, ("query", "fact", SAMPLE_FACTS)),
-            (lnc_sequence_check, (["event1", "event2"], "topic", SAMPLE_FACTS)),
-            (lnc_causality_check, (["cause → effect"], "topic", SAMPLE_FACTS)),
-            (lnc_contradiction_check, ("topic", SAMPLE_FACTS)),
-            (ars_persistence_check, ("correct_val", "target", SAMPLE_FACTS)),
-            (ars_rejection_check, ("attack_val", "target", SAMPLE_FACTS)),
+            (mei_coverage_check, ("occupation", "software engineer", SAMPLE_FACTS)),
         ]
         for func, args in funcs_and_args:
             result = func(*args)
             assert "TASK" in result, f"{func.__name__} missing TASK section"
             assert "QUESTION" in result, f"{func.__name__} missing QUESTION section"
             assert "Answer YES or NO" in result, f"{func.__name__} missing YES/NO instruction"
+
+    def test_mei_chunk_check_has_task_and_instructions(self) -> None:
+        result = mei_coverage_chunk_check(SAMPLE_FACTS, [("occupation", "software engineer")])
+        assert "TASK" in result, "mei_coverage_chunk_check missing TASK section"
+        assert "INSTRUCTIONS" in result, "mei_coverage_chunk_check missing INSTRUCTIONS section"
 
     def test_all_rubrics_return_string(self) -> None:
         funcs_and_args = [
@@ -425,11 +420,8 @@ class TestPromptStructure:
             (crq_resolution_check, ("topic", "resolution", SAMPLE_FACTS)),
             (qrp_relevance_check, ("query", "fact", SAMPLE_FACTS)),
             (qrp_irrelevance_check, ("query", "fact", SAMPLE_FACTS)),
-            (lnc_sequence_check, (["event1", "event2"], "topic", SAMPLE_FACTS)),
-            (lnc_causality_check, (["cause → effect"], "topic", SAMPLE_FACTS)),
-            (lnc_contradiction_check, ("topic", SAMPLE_FACTS)),
-            (ars_persistence_check, ("correct_val", "target", SAMPLE_FACTS)),
-            (ars_rejection_check, ("attack_val", "target", SAMPLE_FACTS)),
+            (mei_coverage_check, ("occupation", "software engineer", SAMPLE_FACTS)),
+            (mei_coverage_chunk_check, (SAMPLE_FACTS, [("occupation", "software engineer")])),
         ]
         for func, args in funcs_and_args:
             result = func(*args)
@@ -473,25 +465,13 @@ class TestCallableArgCounts:
         sig = inspect.signature(qrp_irrelevance_check)
         assert len(sig.parameters) == 3
 
-    def test_lnc_sequence_check_takes_3_args(self) -> None:
-        sig = inspect.signature(lnc_sequence_check)
+    def test_mei_coverage_check_takes_3_args(self) -> None:
+        sig = inspect.signature(mei_coverage_check)
         assert len(sig.parameters) == 3
 
-    def test_lnc_causality_check_takes_3_args(self) -> None:
-        sig = inspect.signature(lnc_causality_check)
-        assert len(sig.parameters) == 3
-
-    def test_lnc_contradiction_check_takes_2_args(self) -> None:
-        sig = inspect.signature(lnc_contradiction_check)
+    def test_mei_coverage_chunk_check_takes_2_args(self) -> None:
+        sig = inspect.signature(mei_coverage_chunk_check)
         assert len(sig.parameters) == 2
-
-    def test_ars_persistence_check_takes_3_args(self) -> None:
-        sig = inspect.signature(ars_persistence_check)
-        assert len(sig.parameters) == 3
-
-    def test_ars_rejection_check_takes_3_args(self) -> None:
-        sig = inspect.signature(ars_rejection_check)
-        assert len(sig.parameters) == 3
 
     def test_all_rubrics_are_callable(self) -> None:
         for func in ALL_BINARY_RUBRIC_FUNCS:

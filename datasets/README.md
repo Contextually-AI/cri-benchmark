@@ -42,37 +42,10 @@ The ground truth file contains:
 
 ## Canonical Personas
 
-### Alex Chen (`persona-1-basic`)
+### Marcus Rivera (`persona-1-base`)
 
-- **Complexity**: basic
-- **Messages**: 1000
-- **Simulated Days**: 76
-- **Profile Dimensions**: 10
-- **Belief Changes**: 3
-- **Conflicts**: 3
-- **Temporal Facts**: 5
-- **Query-Relevance Pairs**: 10
-- **Signal Examples**: 10
-- **Noise Examples**: 10
-
-### Sarah Miller (`persona-2-intermediate`)
-
-- **Complexity**: intermediate
-- **Messages**: 2000
-- **Simulated Days**: 154
-- **Profile Dimensions**: 14
-- **Belief Changes**: 5
-- **Conflicts**: 5
-- **Temporal Facts**: 8
-- **Query-Relevance Pairs**: 15
-- **Signal Examples**: 15
-- **Noise Examples**: 15
-
-### Marcus Rivera (`persona-3-advanced`)
-
-- **Complexity**: advanced
-- **Messages**: 3000
-- **Simulated Days**: 238
+- **Messages**: 2862
+- **Simulated Days**: 289
 - **Profile Dimensions**: 18
 - **Belief Changes**: 7
 - **Conflicts**: 8
@@ -80,6 +53,8 @@ The ground truth file contains:
 - **Query-Relevance Pairs**: 20
 - **Signal Examples**: 20
 - **Noise Examples**: 20
+
+Marcus Rivera is a 41-year-old Puerto Rican-American architect who undergoes significant life changes over ~290 days: a career shift from architecture to sustainable building consulting, a move from Manhattan to Austin to rural Vermont, a divorce from Diana and new relationship with Elena, dietary evolution from standard to vegan to flexitarian, and a political awakening from apolitical to engaged.
 
 ## CRI Evaluation Dimensions Covered
 
@@ -105,21 +80,15 @@ for ds in datasets:
     print(f"{ds.name}: {ds.message_count} messages, GT={ds.has_ground_truth}")
 
 # Load a specific dataset
-dataset = load_dataset("datasets/canonical/persona-1-basic")
+dataset = load_dataset("datasets/canonical/persona-1-base")
 print(f"Messages: {len(dataset.messages)}")
 print(f"Profile dims: {len(dataset.ground_truth.final_profile)}")
 ```
 
 ## Reproducibility
 
-All datasets are generated with a fixed random seed (42) for full
-reproducibility. The generation script is at `scripts/generate_canonical_datasets.py`.
-
-To regenerate:
-
-```bash
-python scripts/generate_canonical_datasets.py
-```
+The persona-1-base dataset is hand-crafted (not procedurally generated)
+to ensure high narrative quality and realistic conversation patterns.
 
 ## Extending
 

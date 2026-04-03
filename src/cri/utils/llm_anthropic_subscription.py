@@ -43,7 +43,7 @@ class AnthropicOAuthChat(BaseChatModel):
     """Chat model that authenticates via an Anthropic OAuth subscription token."""
 
     token_path: str
-    model_name: str = "claude-haiku-4-5-20251001"
+    model_name: str = "claude-sonnet-4-6"
     max_tokens: int = 4096
     temperature: float | None = None
 

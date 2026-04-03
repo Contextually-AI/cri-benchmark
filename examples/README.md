@@ -24,13 +24,13 @@ A **UPP (Universal Personalization Protocol) adapter** that connects an ontology
 
 ```bash
 # Run with the no-memory baseline
-cri run --adapter no-memory --dataset datasets/canonical/persona-1-basic/ --format json --output results/
+cri run --adapter no-memory --dataset datasets/canonical/persona-1-base/ --format json --output results/
 
 # Run with the full-context adapter
-cri run --adapter full-context --dataset datasets/canonical/persona-1-basic/ --format json --output results/
+cri run --adapter full-context --dataset datasets/canonical/persona-1-base/ --format json --output results/
 
 # Run with the RAG adapter
-cri run --adapter rag --dataset datasets/canonical/persona-1-basic/ --format json --output results/
+cri run --adapter rag --dataset datasets/canonical/persona-1-base/ --format json --output results/
 ```
 
 ## Creating Your Own Adapter

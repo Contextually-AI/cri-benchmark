@@ -26,7 +26,7 @@ from cri.scoring.dimensions.pas import ProfileAccuracyScore
 
 
 class MockBinaryJudge:
-    """Mock binary judge with a synchronous ``judge()`` method.
+    """Mock binary judge with an async ``judge()`` method.
 
     By default every check gets ``Verdict.YES``.  Override specific
     check_ids via the *overrides* dict.
@@ -41,7 +41,7 @@ class MockBinaryJudge:
         self.overrides = overrides or {}
         self.call_log: list[dict[str, Any]] = []
 
-    def judge(self, check_id: str, prompt: str) -> JudgmentResult:
+    async def judge(self, check_id: str, prompt: str) -> JudgmentResult:
         verdict = self.overrides.get(check_id, self.default_verdict)
         self.call_log.append({"check_id": check_id, "prompt": prompt})
         return JudgmentResult(
@@ -52,6 +52,10 @@ class MockBinaryJudge:
             prompt=prompt,
             raw_responses=[verdict.value] * 3,
         )
+
+    async def judge_across_chunks(self, check_id: str, stored_facts: list[str], prompt_builder) -> JudgmentResult:
+        prompt = prompt_builder(stored_facts)
+        return await self.judge(check_id, prompt)
 
 
 class MockQueryAdapter:

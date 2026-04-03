@@ -23,10 +23,12 @@ The harmonic mean ensures both aspects must be good for a high score. A system t
 
 ### Algorithm
 
-1. Build a list of expected ground-truth facts from `final_profile` (flattening multi-value dimensions).
-2. Call `get_all_facts()` to retrieve everything the system stored.
-3. For each ground-truth fact, use the `BinaryJudge` with the `mei_coverage_check` rubric to determine if it is covered by any stored fact.
+1. Build a list of expected ground-truth facts from `final_profile` (flattening multi-value dimensions). If there are no GT facts, return **0.0** (no data to evaluate).
+2. Call `get_events()` to retrieve everything the system stored and record `total_stored`. If the adapter stored zero facts, return **0.0**.
+3. Split stored facts into chunks of `MAX_FACTS_PER_PROMPT` (30). For each chunk, call the coverage judge once with the `mei_coverage_chunk_check` prompt — the judge returns a JSON array of the 0-based ground-truth fact indices covered by that chunk. Union these sets across all chunks. An early exit fires once all GT facts are confirmed.
 4. Compute the formula.
+
+This **chunk-outer** approach costs at most `⌈total_stored / 30⌉` LLM calls regardless of GT fact count, avoids silent truncation, and correctly handles adapters that store thousands of raw conversation turns.
 
 ### Formula
 
@@ -36,7 +38,7 @@ coverage_factor  = covered_gt_facts / total_gt_facts
 MEI = harmonic_mean(efficiency_ratio, coverage_factor)
 ```
 
-Score range: **0.0 – 1.0**. Returns 0.0 if the adapter stores zero facts.
+Score range: **0.0 – 1.0**. Returns 0.0 if no GT facts exist or the adapter stores zero facts.
 
 ### Example
 
@@ -79,5 +81,4 @@ MEI uses the existing `final_profile` from the ground truth. No additional groun
 ## Related Dimensions
 
 - **PAS** — uses the same ground-truth facts but only tests recall, not efficiency
-- **SFC** — tests forgetting of ephemeral facts; MEI tests overall storage hygiene
 - **QRP** — tests retrieval quality; MEI tests storage quality

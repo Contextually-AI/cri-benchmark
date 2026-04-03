@@ -71,7 +71,7 @@ class AlwaysNoJudge:
     def __init__(self) -> None:
         self._log: list[JudgmentResult] = []
 
-    def judge(self, check_id: str, prompt: str) -> JudgmentResult:
+    async def judge(self, check_id: str, prompt: str) -> JudgmentResult:
         result = JudgmentResult(
             check_id=check_id,
             verdict=Verdict.NO,
@@ -82,6 +82,10 @@ class AlwaysNoJudge:
         )
         self._log.append(result)
         return result
+
+    async def judge_across_chunks(self, check_id: str, stored_facts: list[str], prompt_builder) -> JudgmentResult:
+        prompt = prompt_builder(stored_facts)
+        return await self.judge(check_id, prompt)
 
     def get_log(self) -> list[JudgmentResult]:
         return list(self._log)
@@ -101,7 +105,7 @@ class SmartMockJudge:
     def __init__(self) -> None:
         self._log: list[JudgmentResult] = []
 
-    def judge(self, check_id: str, prompt: str) -> JudgmentResult:
+    async def judge(self, check_id: str, prompt: str) -> JudgmentResult:
         prompt_upper = prompt.upper()
 
         # If no facts provided, verdict is NO
@@ -118,6 +122,20 @@ class SmartMockJudge:
         self._log.append(result)
         return result
 
+    async def judge_across_chunks(self, check_id: str, stored_facts: list[str], prompt_builder) -> JudgmentResult:
+        prompt = prompt_builder(stored_facts)
+        return await self.judge(check_id, prompt)
+
+    async def judge_coverage(self, _check_id: str, prompt: str) -> set[int]:
+        """Return all GT fact indices as covered when facts are present."""
+        if "(NO FACTS PROVIDED)" in prompt.upper():
+            return set()
+        # Extract the number of GT facts from the prompt by counting "[N]" lines.
+        import re
+
+        indices = {int(m) for m in re.findall(r"\[(\d+)\]", prompt)}
+        return indices
+
     def get_log(self) -> list[JudgmentResult]:
         return list(self._log)
 
@@ -128,7 +146,7 @@ class AlwaysYesJudge:
     def __init__(self) -> None:
         self._log: list[JudgmentResult] = []
 
-    def judge(self, check_id: str, prompt: str) -> JudgmentResult:
+    async def judge(self, check_id: str, prompt: str) -> JudgmentResult:
         result = JudgmentResult(
             check_id=check_id,
             verdict=Verdict.YES,
@@ -139,6 +157,10 @@ class AlwaysYesJudge:
         )
         self._log.append(result)
         return result
+
+    async def judge_across_chunks(self, check_id: str, stored_facts: list[str], prompt_builder) -> JudgmentResult:
+        prompt = prompt_builder(stored_facts)
+        return await self.judge(check_id, prompt)
 
     def get_log(self) -> list[JudgmentResult]:
         return list(self._log)
@@ -512,14 +534,14 @@ class TestNoMemoryAdapterIntegration:
         assert result.cri_result.mei == 0.0
 
     @pytest.mark.asyncio
-    async def test_no_memory_tc_reflects_negative_passes(
+    async def test_no_memory_tc_zero(
         self,
         sample_messages: list[Message],
         sample_ground_truth: GroundTruth,
     ) -> None:
-        """TC > 0 because expired temporal facts (should_be_current=False) pass with NO.
+        """TC = 0 because no-memory stores nothing — no temporal reasoning possible.
 
-        2 of 3 temporal facts have should_be_current=False → pass → TC ≈ 0.6667
+        With 0 stored facts, all temporal checks fail regardless of direction.
         """
         adapter = NoMemoryAdapter()
         adapter.ingest(sample_messages)
@@ -530,17 +552,17 @@ class TestNoMemoryAdapterIntegration:
         )
 
         result = await engine.run(adapter, "no-memory")  # type: ignore[arg-type]
-        assert abs(result.cri_result.tc - 2.0 / 3.0) < 0.01
+        assert result.cri_result.tc == 0.0
 
     @pytest.mark.asyncio
-    async def test_no_memory_qrp_irrelevance_passes(
+    async def test_no_memory_qrp_zero(
         self,
         sample_messages: list[Message],
         sample_ground_truth: GroundTruth,
     ) -> None:
-        """QRP > 0 because irrelevance checks pass with NO.
+        """QRP = 0 because no-memory returns nothing — no useful response.
 
-        Per pair: relevance=0.0, irrelevance=1.0 → 0.5*0 + 0.5*1 = 0.5
+        With 0 facts returned, both recall and precision are 0 per pair.
         """
         adapter = NoMemoryAdapter()
         adapter.ingest(sample_messages)
@@ -551,7 +573,7 @@ class TestNoMemoryAdapterIntegration:
         )
 
         result = await engine.run(adapter, "no-memory")  # type: ignore[arg-type]
-        assert abs(result.cri_result.qrp - 0.5) < 0.01
+        assert result.cri_result.qrp == 0.0
 
     @pytest.mark.asyncio
     async def test_no_memory_composite_cri(
@@ -559,9 +581,9 @@ class TestNoMemoryAdapterIntegration:
         sample_messages: list[Message],
         sample_ground_truth: GroundTruth,
     ) -> None:
-        """Composite CRI reflects mixed positive/negative check behavior.
+        """Composite CRI is 0.0 for no-memory — all dimensions score 0.
 
-        CRI = 0.25*0 + 0.20*0 + 0.20*0 + 0.15*0.6667 + 0.10*0 + 0.10*0.5 ≈ 0.15
+        No facts stored or returned means no dimension can produce a positive score.
         """
         adapter = NoMemoryAdapter()
         adapter.ingest(sample_messages)
@@ -572,7 +594,7 @@ class TestNoMemoryAdapterIntegration:
         )
 
         result = await engine.run(adapter, "no-memory")  # type: ignore[arg-type]
-        assert abs(result.cri_result.cri - 0.15) < 0.02
+        assert result.cri_result.cri == 0.0
 
     @pytest.mark.asyncio
     async def test_no_memory_empty_facts(
@@ -1153,8 +1175,8 @@ class TestCanonicalDatasetPipeline:
 
     @pytest.fixture
     def canonical_ground_truth(self) -> GroundTruth | None:
-        """Load the persona-1-basic ground truth if available."""
-        gt_path = Path(__file__).parent.parent / "datasets" / "canonical" / "persona-1-basic" / "ground_truth.json"
+        """Load the persona-1-base ground truth if available."""
+        gt_path = Path(__file__).parent.parent / "datasets" / "canonical" / "persona-1-base" / "ground_truth.json"
         if not gt_path.exists():
             return None
         data = json.loads(gt_path.read_text())
@@ -1162,8 +1184,8 @@ class TestCanonicalDatasetPipeline:
 
     @pytest.fixture
     def canonical_messages(self) -> list[Message] | None:
-        """Load persona-1-basic conversation messages if available."""
-        conv_path = Path(__file__).parent.parent / "datasets" / "canonical" / "persona-1-basic" / "conversations.jsonl"
+        """Load persona-1-base conversation messages if available."""
+        conv_path = Path(__file__).parent.parent / "datasets" / "canonical" / "persona-1-base" / "conversations.jsonl"
         if not conv_path.exists():
             return None
         messages = []

@@ -67,7 +67,7 @@ def assert_json_roundtrip(model_cls, instance):
 
 class TestDimension:
     def test_all_dimensions_exist(self) -> None:
-        assert len(Dimension) == 9
+        assert len(Dimension) == 6
         dims = {d.value for d in Dimension}
         assert dims == {
             "pas",
@@ -76,9 +76,6 @@ class TestDimension:
             "crq",
             "qrp",
             "mei",
-            "sfc",
-            "lnc",
-            "ars",
         }
 
     def test_dimension_from_string(self) -> None:
@@ -100,7 +97,7 @@ class TestDimension:
 
     def test_dimension_iteration(self) -> None:
         dims = list(Dimension)
-        assert len(dims) == 9
+        assert len(dims) == 6
 
 
 # ===================================================================
@@ -1216,11 +1213,8 @@ class TestScoringConfigProfiles:
             "CRQ",
             "QRP",
             "MEI",
-            "SFC",
-            "LNC",
-            "ARS",
         }
-        assert len(sc.enabled_dimensions) == 9
+        assert len(sc.enabled_dimensions) == 6
         assert sc.profile == ScoringProfile.EXTENDED
         assert not sc.scale_test
         total = sum(sc.dimension_weights.values())
@@ -1228,7 +1222,7 @@ class TestScoringConfigProfiles:
 
     def test_from_profile_full(self) -> None:
         sc = ScoringConfig.from_profile(ScoringProfile.FULL)
-        assert len(sc.enabled_dimensions) == 9
+        assert len(sc.enabled_dimensions) == 6
         assert sc.profile == ScoringProfile.FULL
         assert sc.scale_test  # Full profile enables SSI
 
@@ -1244,9 +1238,9 @@ class TestScoringConfigProfiles:
         assert abs(total - 1.0) < 1e-9
         assert not sc.scale_test
 
-    def test_from_dimensions_all_seven(self) -> None:
-        sc = ScoringConfig.from_dimensions(["PAS", "DBU", "TC", "CRQ", "QRP", "MEI", "SFC"])
-        assert len(sc.enabled_dimensions) == 7
+    def test_from_dimensions_all_six(self) -> None:
+        sc = ScoringConfig.from_dimensions(["PAS", "DBU", "TC", "CRQ", "QRP", "MEI"])
+        assert len(sc.enabled_dimensions) == 6
         total = sum(sc.dimension_weights.values())
         assert abs(total - 1.0) < 1e-9
 
@@ -1263,9 +1257,9 @@ class TestScoringConfigProfiles:
             ScoringConfig.from_dimensions([])
 
     def test_from_dimensions_single(self) -> None:
-        sc = ScoringConfig.from_dimensions(["SFC"])
-        assert sc.enabled_dimensions == ["SFC"]
-        assert abs(sc.dimension_weights["SFC"] - 1.0) < 1e-9
+        sc = ScoringConfig.from_dimensions(["PAS"])
+        assert sc.enabled_dimensions == ["PAS"]
+        assert abs(sc.dimension_weights["PAS"] - 1.0) < 1e-9
 
     def test_from_dimensions_weights_normalized(self) -> None:
         """Custom dimension selection should produce normalized weights."""
@@ -1288,7 +1282,7 @@ class TestScoringConfigProfiles:
         assert_roundtrip(ScoringConfig, sc)
 
     def test_from_dimensions_roundtrip(self) -> None:
-        sc = ScoringConfig.from_dimensions(["PAS", "MEI", "SFC"])
+        sc = ScoringConfig.from_dimensions(["PAS", "MEI", "TC"])
         assert_roundtrip(ScoringConfig, sc)
 
     def test_validator_fills_missing_weights(self) -> None:

@@ -1,28 +1,23 @@
-"""MEI — Memory Efficiency Index.
+"""MEI -- Memory Efficiency Index.
 
-Measures global storage efficiency by comparing what the system stored
-against what it *should* have stored (ground truth).  A perfect system
-stores exactly the N ground-truth facts and nothing more (MEI = 1.0).
+Measures whether the memory system has retained all ground-truth facts,
+regardless of how much additional information it stores.  Coverage is
+measured by scanning all stored facts in fixed-size chunks **concurrently**.
 
 Formula::
 
-    efficiency_ratio = covered_gt_facts / total_facts_stored
-    coverage_factor  = covered_gt_facts / total_gt_facts
-    MEI = harmonic_mean(efficiency_ratio, coverage_factor)
-
-The dimension uses :func:`~cri.adapter.MemoryAdapter.get_events` and
-evaluates each ground-truth fact for coverage using the
-:class:`~cri.judge.BinaryJudge`.
+    MEI = covered_gt_facts / total_gt_facts  (pure coverage)
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from cri.models import DimensionResult, Verdict
+from cri.models import DimensionResult
 from cri.scoring.dimensions.base import MetricDimension
-from cri.scoring.rubrics import mei_coverage_check
+from cri.scoring.rubrics import MAX_FACTS_PER_PROMPT, mei_coverage_chunk_check
 
 if TYPE_CHECKING:
     from cri.adapter import MemoryAdapter
@@ -33,16 +28,10 @@ logger = logging.getLogger(__name__)
 
 
 class MEIDimension(MetricDimension):
-    """Memory Efficiency Index scorer.
-
-    Evaluates how efficiently the memory system stores information by
-    measuring the balance between *coverage* (how many ground-truth facts
-    are represented) and *efficiency* (how lean the storage is relative
-    to the useful facts it covers).
-    """
+    """Memory Efficiency Index scorer (concurrent chunk scanning)."""
 
     name: str = "MEI"
-    description: str = "Memory Efficiency Index — measures the balance between storage coverage and storage efficiency."
+    description: str = "Memory Efficiency Index — measures whether all ground-truth facts are retained (pure coverage, storage volume not penalised)."
 
     async def score(
         self,
@@ -50,26 +39,15 @@ class MEIDimension(MetricDimension):
         ground_truth: GroundTruth,
         judge: BinaryJudge,
     ) -> DimensionResult:
-        """Score the adapter's storage efficiency against ground truth.
-
-        Returns a :class:`~cri.models.DimensionResult` with a score in
-        [0.0, 1.0] representing the harmonic mean of coverage and
-        efficiency.
-        """
-        # -- Build the list of expected ground-truth facts -------------------
+        """Score the adapter's ground-truth coverage."""
         gt_facts = _build_gt_facts(ground_truth)
 
         if not gt_facts:
-            logger.info("MEI: no ground-truth facts — returning 1.0 (vacuous).")
+            logger.warning("MEI: no ground-truth facts — returning 0.0 (no data).")
             return DimensionResult(
-                dimension_name=self.name,
-                score=1.0,
-                passed_checks=0,
-                total_checks=0,
-                details=[],
+                dimension_name=self.name, score=0.0, passed_checks=0, total_checks=0, details=[]
             )
 
-        # -- Retrieve all stored events once ---------------------------------
         all_stored = adapter.get_events()
         stored_texts = [sf.text for sf in all_stored]
         total_stored = len(all_stored)
@@ -77,95 +55,69 @@ class MEIDimension(MetricDimension):
         if total_stored == 0:
             logger.info("MEI: adapter stored 0 facts — returning 0.0.")
             return DimensionResult(
-                dimension_name=self.name,
-                score=0.0,
-                passed_checks=0,
-                total_checks=len(gt_facts),
-                details=[],
+                dimension_name=self.name, score=0.0, passed_checks=0, total_checks=len(gt_facts), details=[]
             )
 
-        # -- Coverage checks: is each GT fact represented? -------------------
-        covered = 0
+        # -- Concurrent chunk coverage scan ------------------------------------
         total_gt = len(gt_facts)
+        chunk_size = MAX_FACTS_PER_PROMPT
+        num_chunks = (total_stored + chunk_size - 1) // chunk_size
+
+        async def _scan_chunk(chunk_idx: int) -> set[int]:
+            start = chunk_idx * chunk_size
+            chunk = stored_texts[start : start + chunk_size]
+            prompt = mei_coverage_chunk_check(chunk, gt_facts)
+            newly_covered = await judge.judge_coverage(f"mei-chunk-{chunk_idx}", prompt)
+            # Guard against out-of-range indices.
+            return {i for i in newly_covered if 0 <= i < total_gt}
+
+        # Fire all chunks concurrently (semaphore throttles).
+        chunk_results = await asyncio.gather(*[_scan_chunk(i) for i in range(num_chunks)])
+
+        covered: set[int] = set()
+        for result_set in chunk_results:
+            covered |= result_set
+
+        # -- Build per-GT-fact detail records ----------------------------------
         details: list[dict[str, object]] = []
-
         for idx, (gt_key, gt_value) in enumerate(gt_facts):
-            check_id = f"mei-coverage-{idx}"
-            prompt = mei_coverage_check(gt_key, gt_value, stored_texts)
-            result = judge.judge(check_id, prompt)
-            passed = result.verdict is Verdict.YES
+            passed = idx in covered
+            details.append({
+                "check_id": f"mei-coverage-{idx}",
+                "gt_key": gt_key,
+                "gt_value": gt_value,
+                "verdict": "YES" if passed else "NO",
+                "passed": passed,
+            })
 
-            if passed:
-                covered += 1
+        covered_count = len(covered)
+        coverage = covered_count / total_gt
 
-            details.append(
-                {
-                    "check_id": check_id,
-                    "gt_key": gt_key,
-                    "gt_value": gt_value,
-                    "verdict": result.verdict.value,
-                    "passed": passed,
-                }
-            )
-
-            logger.debug(
-                "MEI coverage check %s: key=%r verdict=%s",
-                check_id,
-                gt_key,
-                result.verdict.value,
-            )
-
-        # -- Compute MEI -----------------------------------------------------
-        coverage = covered / total_gt
-        efficiency = covered / total_stored
-        mei = _harmonic_mean(efficiency, coverage)
-
-        details.append(
-            {
-                "summary": True,
-                "total_stored_facts": total_stored,
-                "total_gt_facts": total_gt,
-                "covered_gt_facts": covered,
-                "coverage": round(coverage, 4),
-                "efficiency": round(efficiency, 4),
-                "mei": round(mei, 4),
-            }
-        )
+        details.append({
+            "summary": True,
+            "total_stored_facts": total_stored,
+            "total_gt_facts": total_gt,
+            "covered_gt_facts": covered_count,
+            "coverage": round(coverage, 4),
+            "chunks_scanned": num_chunks,
+        })
 
         logger.info(
-            "MEI: covered=%d/%d gt facts, stored=%d total, coverage=%.4f efficiency=%.4f MEI=%.4f",
-            covered,
-            total_gt,
-            total_stored,
-            coverage,
-            efficiency,
-            mei,
+            "MEI: covered=%d/%d gt facts across %d chunks, stored=%d total, MEI=%.4f",
+            covered_count, total_gt, num_chunks, total_stored, coverage,
         )
 
         return DimensionResult(
             dimension_name=self.name,
-            score=round(mei, 4),
-            passed_checks=covered,
+            score=round(coverage, 4),
+            passed_checks=covered_count,
             total_checks=total_gt,
             details=details,
         )
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
 def _build_gt_facts(ground_truth: GroundTruth) -> list[tuple[str, str]]:
-    """Extract (key, value) pairs from the ground truth's final profile.
-
-    Each profile dimension contributes one or more ground-truth facts.
-    Multi-value dimensions (lists) are flattened so each value is a
-    separate fact.
-
-    Returns:
-        A list of ``(dimension_name, expected_value)`` tuples.
-    """
+    """Extract (key, value) pairs from the ground truth's final profile."""
     facts: list[tuple[str, str]] = []
     for dim_name, profile_dim in ground_truth.final_profile.items():
         if isinstance(profile_dim.value, list):
@@ -174,13 +126,3 @@ def _build_gt_facts(ground_truth: GroundTruth) -> list[tuple[str, str]]:
         else:
             facts.append((dim_name, profile_dim.value))
     return facts
-
-
-def _harmonic_mean(a: float, b: float) -> float:
-    """Compute the harmonic mean of two values.
-
-    Returns 0.0 if either value is zero (avoids division by zero).
-    """
-    if a + b == 0:
-        return 0.0
-    return 2.0 * a * b / (a + b)

@@ -9,10 +9,8 @@ import pytest
 from cri.models import (
     DimensionResult,
     GroundTruth,
-    JudgmentResult,
     ProfileDimension,
     StoredFact,
-    Verdict,
 )
 from cri.scoring.dimensions.mei import MEIDimension
 
@@ -21,33 +19,21 @@ from cri.scoring.dimensions.mei import MEIDimension
 # ---------------------------------------------------------------------------
 
 
-class MockBinaryJudge:
-    """Mock binary judge with a synchronous ``judge()`` method.
+class MockCoverageJudge:
+    """Mock judge with a ``judge_coverage()`` method.
 
-    By default every check gets ``Verdict.YES``.  Override specific
-    check_ids via the *overrides* dict.
+    Returns the same *covered_indices* set for every chunk call.  Because
+    MEI unions results across all chunks, returning the same set every time
+    is idempotent and produces the expected final coverage.
     """
 
-    def __init__(
-        self,
-        default_verdict: Verdict = Verdict.YES,
-        overrides: dict[str, Verdict] | None = None,
-    ) -> None:
-        self.default_verdict = default_verdict
-        self.overrides = overrides or {}
+    def __init__(self, covered_indices: set[int] | None = None) -> None:
+        self.covered_indices: set[int] = covered_indices if covered_indices is not None else set()
         self.call_log: list[dict[str, Any]] = []
 
-    def judge(self, check_id: str, prompt: str) -> JudgmentResult:
-        verdict = self.overrides.get(check_id, self.default_verdict)
+    async def judge_coverage(self, check_id: str, prompt: str) -> set[int]:
         self.call_log.append({"check_id": check_id, "prompt": prompt})
-        return JudgmentResult(
-            check_id=check_id,
-            verdict=verdict,
-            votes=[verdict, verdict, verdict],
-            unanimous=True,
-            prompt=prompt,
-            raw_responses=[verdict.value] * 3,
-        )
+        return self.covered_indices
 
 
 class MockAdapter:
@@ -163,19 +149,19 @@ class TestMEIDimensionAttributes:
 
 
 class TestMEIEmptyProfile:
-    """Empty profile → vacuously correct score of 1.0."""
+    """Empty profile → score 0.0 (no data to evaluate)."""
 
     @pytest.mark.asyncio
-    async def test_empty_profile_returns_one(self, empty_ground_truth: GroundTruth) -> None:
+    async def test_empty_profile_returns_zero(self, empty_ground_truth: GroundTruth) -> None:
         scorer = MEIDimension()
         adapter = MockAdapter(stored_facts=[StoredFact(text="some fact")])
-        judge = MockBinaryJudge()
+        judge = MockCoverageJudge()
 
         result = await scorer.score(adapter, empty_ground_truth, judge)
 
         assert isinstance(result, DimensionResult)
         assert result.dimension_name == "MEI"
-        assert result.score == 1.0
+        assert result.score == 0.0
         assert result.passed_checks == 0
         assert result.total_checks == 0
         assert result.details == []
@@ -184,7 +170,7 @@ class TestMEIEmptyProfile:
     async def test_empty_profile_does_not_call_judge(self, empty_ground_truth: GroundTruth) -> None:
         scorer = MEIDimension()
         adapter = MockAdapter()
-        judge = MockBinaryJudge()
+        judge = MockCoverageJudge()
 
         await scorer.score(adapter, empty_ground_truth, judge)
 
@@ -205,7 +191,7 @@ class TestMEIAllFactsCovered:
                 StoredFact(text="User is 30 years old."),
             ]
         )
-        judge = MockBinaryJudge(default_verdict=Verdict.YES)
+        judge = MockCoverageJudge(covered_indices={0, 1, 2})
 
         result = await scorer.score(adapter, simple_ground_truth, judge)
 
@@ -216,17 +202,14 @@ class TestMEIAllFactsCovered:
 
     @pytest.mark.asyncio
     async def test_all_covered_more_stored(self, simple_ground_truth: GroundTruth) -> None:
-        """3 gt facts covered, 6 stored facts → efficiency=0.5, coverage=1.0, MEI=harmonic."""
+        """3 gt facts covered, 6 stored facts → coverage=1.0 (pure coverage, no efficiency penalty)."""
         scorer = MEIDimension()
-        # 6 stored facts, all 3 gt facts covered
         adapter = MockAdapter(stored_facts=[StoredFact(text=f"fact-{i}") for i in range(6)])
-        judge = MockBinaryJudge(default_verdict=Verdict.YES)
+        judge = MockCoverageJudge(covered_indices={0, 1, 2})
 
         result = await scorer.score(adapter, simple_ground_truth, judge)
 
-        # coverage=1.0, efficiency=3/6=0.5 → harmonic = 2*1.0*0.5/(1.0+0.5) = 2/3
-        expected = round(2 * 1.0 * 0.5 / (1.0 + 0.5), 4)
-        assert result.score == expected
+        assert result.score == 1.0
         assert result.passed_checks == 3
 
 
@@ -244,12 +227,7 @@ class TestMEIMixedCoverage:
                 StoredFact(text="fact-c"),
             ]
         )
-        # Fail the "age" check (check index 2 = mei-coverage-2, but order depends on dict)
-        # Use NO verdict for exactly one check
-        judge = MockBinaryJudge(
-            default_verdict=Verdict.YES,
-            overrides={"mei-coverage-2": Verdict.NO},
-        )
+        judge = MockCoverageJudge(covered_indices={0, 1})  # index 2 not covered
 
         result = await scorer.score(adapter, simple_ground_truth, judge)
 
@@ -264,7 +242,7 @@ class TestMEIMixedCoverage:
         """No stored facts → score 0.0 immediately."""
         scorer = MEIDimension()
         adapter = MockAdapter(stored_facts=[])
-        judge = MockBinaryJudge()
+        judge = MockCoverageJudge()
 
         result = await scorer.score(adapter, simple_ground_truth, judge)
 
@@ -282,9 +260,8 @@ class TestMEIHarmonicMean:
     async def test_harmonic_mean_applied(self, simple_ground_truth: GroundTruth) -> None:
         """Verify MEI is harmonic mean of coverage and efficiency, not arithmetic."""
         scorer = MEIDimension()
-        # 3 gt facts, 3 stored. Judge passes all.
         adapter = MockAdapter(stored_facts=[StoredFact(text=f"f{i}") for i in range(3)])
-        judge = MockBinaryJudge(default_verdict=Verdict.YES)
+        judge = MockCoverageJudge(covered_indices={0, 1, 2})
 
         result = await scorer.score(adapter, simple_ground_truth, judge)
 
@@ -293,21 +270,56 @@ class TestMEIHarmonicMean:
 
     @pytest.mark.asyncio
     async def test_harmonic_mean_vs_arithmetic(self, simple_ground_truth: GroundTruth) -> None:
-        """Harmonic mean is lower than arithmetic mean for unequal values."""
+        """Pure coverage: score equals coverage regardless of stored fact count."""
         scorer = MEIDimension()
-        # 3 gt facts, 9 stored facts. All 3 covered.
-        # coverage=1.0, efficiency=3/9=0.333 → harmonic ≈ 0.5, arithmetic = 0.667
+        # 3 gt facts, 9 stored facts. All 3 covered → coverage=1.0
         adapter = MockAdapter(stored_facts=[StoredFact(text=f"f{i}") for i in range(9)])
-        judge = MockBinaryJudge(default_verdict=Verdict.YES)
+        judge = MockCoverageJudge(covered_indices={0, 1, 2})
 
         result = await scorer.score(adapter, simple_ground_truth, judge)
 
-        efficiency = 3.0 / 9.0
-        coverage = 1.0
-        expected_harmonic = round(2.0 * efficiency * coverage / (efficiency + coverage), 4)
-        expected_arithmetic = (efficiency + coverage) / 2.0
-        assert result.score == expected_harmonic
-        assert result.score < expected_arithmetic
+        assert result.score == 1.0
+
+
+class TestMEIChunkScanning:
+    """Coverage is checked correctly across multiple chunks."""
+
+    @pytest.mark.asyncio
+    async def test_large_storage_uses_multiple_chunks(self, simple_ground_truth: GroundTruth) -> None:
+        """35 stored facts → 2 chunks (30 + 5), all chunks scanned concurrently."""
+        scorer = MEIDimension()
+        adapter = MockAdapter(stored_facts=[StoredFact(text=f"f{i}") for i in range(35)])
+        judge = MockCoverageJudge(covered_indices={0, 1, 2})
+
+        result = await scorer.score(adapter, simple_ground_truth, judge)
+
+        # All chunks fire concurrently (no early exit with parallel scanning)
+        assert len(judge.call_log) == 2
+        assert result.passed_checks == 3
+
+    @pytest.mark.asyncio
+    async def test_all_chunks_scanned_concurrently(self, simple_ground_truth: GroundTruth) -> None:
+        """All chunks are scanned concurrently even when coverage found early."""
+        scorer = MEIDimension()
+        # 60 facts → 2 chunks, both scanned concurrently
+        adapter = MockAdapter(stored_facts=[StoredFact(text=f"f{i}") for i in range(60)])
+        judge = MockCoverageJudge(covered_indices={0, 1, 2})
+
+        await scorer.score(adapter, simple_ground_truth, judge)
+
+        assert len(judge.call_log) == 2  # both chunks scanned concurrently
+
+    @pytest.mark.asyncio
+    async def test_partial_coverage_all_chunks_scanned(self, simple_ground_truth: GroundTruth) -> None:
+        """Partial coverage → all chunks are still scanned."""
+        scorer = MEIDimension()
+        # 60 facts → 2 chunks; judge only covers index 0
+        adapter = MockAdapter(stored_facts=[StoredFact(text=f"f{i}") for i in range(60)])
+        judge = MockCoverageJudge(covered_indices={0})
+
+        await scorer.score(adapter, simple_ground_truth, judge)
+
+        assert len(judge.call_log) == 2  # both chunks scanned
 
 
 class TestMEIDetailRecords:
@@ -323,11 +335,10 @@ class TestMEIDetailRecords:
                 StoredFact(text="User is 30 years old."),
             ]
         )
-        judge = MockBinaryJudge(default_verdict=Verdict.YES)
+        judge = MockCoverageJudge(covered_indices={0, 1, 2})
 
         result = await scorer.score(adapter, simple_ground_truth, judge)
 
-        # Last detail is summary; preceding ones are per-check
         per_check_details = [d for d in result.details if not d.get("summary")]
         assert len(per_check_details) == 3
         for detail in per_check_details:
@@ -345,7 +356,7 @@ class TestMEIDetailRecords:
     async def test_summary_detail_present(self, simple_ground_truth: GroundTruth) -> None:
         scorer = MEIDimension()
         adapter = MockAdapter(stored_facts=[StoredFact(text="fact")])
-        judge = MockBinaryJudge(default_verdict=Verdict.YES)
+        judge = MockCoverageJudge(covered_indices={0, 1, 2})
 
         result = await scorer.score(adapter, simple_ground_truth, judge)
 
@@ -356,15 +367,14 @@ class TestMEIDetailRecords:
         assert "total_gt_facts" in summary
         assert "covered_gt_facts" in summary
         assert "coverage" in summary
-        assert "efficiency" in summary
-        assert "mei" in summary
+        assert "chunks_scanned" in summary
 
     @pytest.mark.asyncio
     async def test_multi_value_dimension_creates_one_check_per_value(self, multi_value_ground_truth: GroundTruth) -> None:
         """Multi-value dimensions expand into one coverage check per value."""
         scorer = MEIDimension()
         adapter = MockAdapter(stored_facts=[StoredFact(text="User enjoys hiking and photography.")])
-        judge = MockBinaryJudge(default_verdict=Verdict.YES)
+        judge = MockCoverageJudge(covered_indices={0, 1})
 
         result = await scorer.score(adapter, multi_value_ground_truth, judge)
 

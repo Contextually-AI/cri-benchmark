@@ -38,7 +38,7 @@ class MockBinaryJudge:
         self.default_verdict = default_verdict
         self._log: list[JudgmentResult] = []
 
-    def judge(self, check_id: str, prompt: str) -> JudgmentResult:
+    async def judge(self, check_id: str, prompt: str) -> JudgmentResult:
         result = JudgmentResult(
             check_id=check_id,
             verdict=self.default_verdict,
@@ -49,6 +49,13 @@ class MockBinaryJudge:
         )
         self._log.append(result)
         return result
+
+    async def judge_across_chunks(self, check_id: str, stored_facts: list[str], prompt_builder) -> JudgmentResult:
+        prompt = prompt_builder(stored_facts)
+        return await self.judge(check_id, prompt)
+
+    async def judge_coverage(self, check_id: str, prompt: str) -> set[int]:
+        return set()
 
     def get_log(self) -> list[JudgmentResult]:
         return list(self._log)

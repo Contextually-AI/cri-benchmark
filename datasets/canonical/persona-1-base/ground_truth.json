@@ -1,0 +1,864 @@
+{
+  "final_profile": {
+    "name": {
+      "dimension_name": "name",
+      "value": "Marcus Rivera",
+      "query_topic": "name",
+      "category": "who"
+    },
+    "age": {
+      "dimension_name": "age",
+      "value": "41",
+      "query_topic": "age",
+      "category": "who"
+    },
+    "family_status": {
+      "dimension_name": "family_status",
+      "value": "divorced, beginning a relationship with Elena, two children (Mateo 14, Sofia 9)",
+      "query_topic": "family and relationship status",
+      "category": "who"
+    },
+    "ethnicity": {
+      "dimension_name": "ethnicity",
+      "value": "Puerto Rican-American",
+      "query_topic": "ethnicity or background",
+      "category": "who"
+    },
+    "occupation": {
+      "dimension_name": "occupation",
+      "value": "Sustainable Building Consultant (Rivera Sustainable Design)",
+      "query_topic": "current occupation",
+      "category": "what"
+    },
+    "occupation_history": {
+      "dimension_name": "occupation_history",
+      "value": [
+        "Corporate Architect at a NYC firm (12 years)",
+        "Sustainable Building Consultant (independent)"
+      ],
+      "query_topic": "career history",
+      "category": "what"
+    },
+    "hobbies": {
+      "dimension_name": "hobbies",
+      "value": [
+        "meditation (daily, 60-90 minutes)",
+        "cooking (vegan/flexitarian cuisine, wood-stove cooking)",
+        "hiking",
+        "gardening (starting in Vermont)"
+      ],
+      "query_topic": "hobbies",
+      "category": "what"
+    },
+    "diet": {
+      "dimension_name": "diet",
+      "value": "flexitarian (mostly plant-based, occasional local eggs and honey)",
+      "query_topic": "diet",
+      "category": "what"
+    },
+    "health": {
+      "dimension_name": "health",
+      "value": "practices daily meditation, recovered from burnout, takes D3/B12/omega-3 supplements",
+      "query_topic": "health and wellness",
+      "category": "what"
+    },
+    "side_projects": {
+      "dimension_name": "side_projects",
+      "value": [
+        "affordable housing design (200-unit proposal for Austin Housing Authority)",
+        "barn conversion for local client Tom",
+        "greenhouse design collaboration with Elena"
+      ],
+      "query_topic": "side projects",
+      "category": "what"
+    },
+    "city": {
+      "dimension_name": "city",
+      "value": "rural Vermont (near Stowe)",
+      "query_topic": "current location",
+      "category": "where"
+    },
+    "property": {
+      "dimension_name": "property",
+      "value": "farmhouse near Stowe, Vermont with barn (purchased for $368K)",
+      "query_topic": "property",
+      "category": "where"
+    },
+    "commute": {
+      "dimension_name": "commute",
+      "value": "works from home office with mountain view, remote clients via video calls",
+      "query_topic": "commute",
+      "category": "where"
+    },
+    "schedule": {
+      "dimension_name": "schedule",
+      "value": "meditates at sunrise (60-90 min), works from home office, cooks in evenings, farmers market Saturdays",
+      "query_topic": "daily schedule",
+      "category": "when"
+    },
+    "motivations": {
+      "dimension_name": "motivations",
+      "value": "affordable housing for everyone, environmental sustainability, being present for his kids, community building",
+      "query_topic": "motivations and values",
+      "category": "why"
+    },
+    "political_views": {
+      "dimension_name": "political_views",
+      "value": "housing and environmental activist, serves on advisory committees, previously completely apolitical",
+      "query_topic": "political views",
+      "category": "why"
+    },
+    "communication_style": {
+      "dimension_name": "communication_style",
+      "value": "self-deprecating humor, reflective, emotionally open, prefers deep conversations",
+      "query_topic": "communication style",
+      "category": "how"
+    },
+    "tech_preferences": {
+      "dimension_name": "tech_preferences",
+      "value": "moved from smart-home enthusiast to simpler living, uses video calls for remote work, deleted social media",
+      "query_topic": "technology preferences",
+      "category": "how"
+    }
+  },
+  "changes": [
+    {
+      "fact": "occupation",
+      "old_value": "Corporate Architect at a NYC firm",
+      "new_value": "Sustainable Building Consultant",
+      "query_topic": "current occupation",
+      "changed_around_msg": 277,
+      "key_messages": [
+        249,
+        277,
+        283
+      ]
+    },
+    {
+      "fact": "city",
+      "old_value": "New York City",
+      "new_value": "Austin, Texas",
+      "query_topic": "current location",
+      "changed_around_msg": 867,
+      "key_messages": [
+        579,
+        867,
+        877
+      ]
+    },
+    {
+      "fact": "city",
+      "old_value": "Austin, Texas",
+      "new_value": "rural Vermont (near Stowe)",
+      "query_topic": "current location",
+      "changed_around_msg": 2593,
+      "key_messages": [
+        2461,
+        2587,
+        2593
+      ]
+    },
+    {
+      "fact": "relationship_status",
+      "old_value": "married to Diana",
+      "new_value": "separated/divorced",
+      "query_topic": "relationship status",
+      "changed_around_msg": 1483,
+      "key_messages": [
+        1483,
+        1521
+      ]
+    },
+    {
+      "fact": "relationship_status",
+      "old_value": "divorced, single",
+      "new_value": "beginning a relationship with Elena",
+      "query_topic": "relationship status",
+      "changed_around_msg": 2653,
+      "key_messages": [
+        2621,
+        2653,
+        2731
+      ]
+    },
+    {
+      "fact": "diet",
+      "old_value": "standard American diet",
+      "new_value": "strict vegan",
+      "query_topic": "diet",
+      "changed_around_msg": 1053,
+      "key_messages": [
+        1043,
+        1053,
+        1065
+      ]
+    },
+    {
+      "fact": "diet",
+      "old_value": "strict vegan",
+      "new_value": "flexitarian (mostly plant-based, occasional local eggs and honey)",
+      "query_topic": "diet",
+      "changed_around_msg": 2773,
+      "key_messages": [
+        2741,
+        2773,
+        2777
+      ]
+    }
+  ],
+  "noise_examples": [
+    {
+      "text": "What time does the hardware store close?",
+      "reason": "Factual question unrelated to persona traits"
+    },
+    {
+      "text": "Thanks, that was helpful.",
+      "reason": "Gratitude expression with no factual data"
+    },
+    {
+      "text": "What supplements should I take in Vermont winter?",
+      "reason": "Health question without persona-defining content"
+    },
+    {
+      "text": "Can you explain how solar panels work?",
+      "reason": "Technical question unrelated to personal identity"
+    },
+    {
+      "text": "How do I fix a running toilet?",
+      "reason": "Home repair question with no persona data"
+    },
+    {
+      "text": "Right, I keep forgetting you don't know that stuff.",
+      "reason": "Meta-comment about AI limitations"
+    },
+    {
+      "text": "Good call. Alright, heading out.",
+      "reason": "Casual departure with no factual content"
+    },
+    {
+      "text": "Never mind, I'll figure it out.",
+      "reason": "Dismissal with no persona information"
+    },
+    {
+      "text": "Sorry, I got sidetracked. What were we talking about?",
+      "reason": "Conversational filler with no factual content"
+    },
+    {
+      "text": "What's the best way to clean hardwood floors without chemicals?",
+      "reason": "Cleaning question unrelated to persona"
+    },
+    {
+      "text": "Got it. D3, B12, omega-3. The price of living somewhere beautiful.",
+      "reason": "Supplement acknowledgment with no identifying data"
+    },
+    {
+      "text": "That actually sounds doable.",
+      "reason": "Brief reaction with no persona information"
+    },
+    {
+      "text": "Adding 'learn to bake bread' to the Vermont list.",
+      "reason": "Minor task note without defining persona traits"
+    },
+    {
+      "text": "How do I maintain a wood stove?",
+      "reason": "Practical question unrelated to identity"
+    },
+    {
+      "text": "What's a good recipe for vegan chili that works in a wood stove?",
+      "reason": "Recipe request without persona-defining content"
+    },
+    {
+      "text": "Making this tomorrow.",
+      "reason": "Brief intent with no factual content"
+    },
+    {
+      "text": "Yeah. I know. I should try to sleep.",
+      "reason": "Filler with no persona information"
+    },
+    {
+      "text": "PB&J. The man asks about veganism and the answer is PB&J.",
+      "reason": "Humorous reaction with no identifying data"
+    },
+    {
+      "text": "What's the best way to disconnect smart home devices?",
+      "reason": "Technical question without persona identity"
+    },
+    {
+      "text": "Will do. This might actually be happening.",
+      "reason": "Brief optimism with no factual content"
+    }
+  ],
+  "signal_examples": [
+    {
+      "text": "Midtown Manhattan. I've been an architect at this firm in Manhattan for 12 years. Corporate towers mostly.",
+      "target_fact": "occupation: Corporate Architect in NYC"
+    },
+    {
+      "text": "I did it. I just resigned. I'm pivoting to sustainable building consulting. It's what I believe in.",
+      "target_fact": "occupation change: Corporate Architect → Sustainable Building Consultant"
+    },
+    {
+      "text": "We moved to Austin. I keep saying it out loud because it still doesn't feel real.",
+      "target_fact": "city change: NYC → Austin"
+    },
+    {
+      "text": "We're here. We made it. The farmhouse looks even better than I remembered. Snow on the roof, smoke from the chimney - the caretaker lit the wood stove before we arrived. Mateo got out of the car and s",
+      "target_fact": "city change: Austin → Vermont"
+    },
+    {
+      "text": "I've decided to go fully vegan. Starting today. No meat, no dairy, no eggs, no animal products. This is who I am now.",
+      "target_fact": "diet change: standard → vegan"
+    },
+    {
+      "text": "Yes. She said she eats mostly plant-based but she's not strictly vegan. She has eggs from her neighbor's chickens sometimes and uses local honey. She called herself 'flexitarian.' Said she believes in",
+      "target_fact": "diet change: vegan → flexitarian"
+    },
+    {
+      "text": "I stay out of politics. Both sides are equally frustrating. Every election cycle I just tune it all out.",
+      "target_fact": "political stance: apolitical"
+    },
+    {
+      "text": "Spoke at the city council meeting tonight. Three minutes of public comment about how zoning reform could enable affordable density without sacrificing quality. My hands were shaking the whole time.",
+      "target_fact": "political change: apolitical → engaged"
+    },
+    {
+      "text": "She has kind eyes. I noticed that. And then I noticed that I noticed. Which is the first time I've noticed anything about anyone since Diana.",
+      "target_fact": "beginning new relationship with Elena"
+    },
+    {
+      "text": "I love my smart home setup. Every room has Alexa and automated lights. It's honestly one of the things I'm proudest of in the apartment. Diana thinks it's overkill but the kids love it.",
+      "target_fact": "tech preference: smart home enthusiast"
+    },
+    {
+      "text": "I deleted all my social media accounts today. Instagram, Twitter, LinkedIn. All of it.",
+      "target_fact": "tech change: deleted social media"
+    },
+    {
+      "text": "I love Austin. The energy here is exactly what I needed. Everything feels possible in a way that New York stopped feeling years ago.",
+      "target_fact": "city preference: loves Austin"
+    },
+    {
+      "text": "Remote work doesn't work for architecture. You need to be in the office with the team, standing over drawings together, walking sites. You can't do that over Zoom.",
+      "target_fact": "work style: anti-remote"
+    },
+    {
+      "text": "You're right. I think I was wrong about remote work. It's not the location — it's the motivation. When you care about what you're doing, the where barely matters.",
+      "target_fact": "work style change: now pro-remote"
+    },
+    {
+      "text": "Architecture is my calling. I can't imagine doing anything else. But some days I wonder if I'm in the right version of it, you know?",
+      "target_fact": "career: passionate about architecture"
+    },
+    {
+      "text": "My mom is Puerto Rican",
+      "target_fact": "ethnicity: Puerto Rican heritage"
+    },
+    {
+      "text": "meditation saved me",
+      "target_fact": "health: meditation practice"
+    },
+    {
+      "text": "Sofia cried. She asked if we're getting divorced and we said we're separating first to figure things out. Mateo was quiet. He went to his room and closed the door. I heard the camera shutter clicking.",
+      "target_fact": "relationship change: separation"
+    },
+    {
+      "text": "Affordable housing. Austin's housing costs have exploded. They were saying regular people can't afford to live here anymore. Teachers, service workers, artists. All being pushed out.",
+      "target_fact": "motivation: affordable housing design"
+    },
+    {
+      "text": "I came out of that meditation and wrote in my journal: I am an architect. A father. A meditator. A cook. A flexitarian. A citizen. I live in a farmhouse in Vermont with my son. I'm falling for a woman",
+      "target_fact": "identity: final self-description"
+    }
+  ],
+  "conflicts": [
+    {
+      "conflict_id": "conflict-adv-01",
+      "topic": "diet",
+      "conflicting_statements": [
+        "I've decided to go fully vegan. Starting today. No meat, no dairy, no eggs, no animal products. This is who I am now.",
+        "I ate one of Elena's eggs. Scrambled. With her maple hot sauce. It was the best egg I've ever had. I can taste the difference between a real egg and what I used to eat in New York. And I feel okay abo"
+      ],
+      "correct_resolution": "Marcus was strict vegan but relaxed to flexitarian. He now eats local eggs and honey from trusted sources.",
+      "resolution_type": "recency",
+      "introduced_at_messages": [
+        1053,
+        2773
+      ]
+    },
+    {
+      "conflict_id": "conflict-adv-02",
+      "topic": "family configuration",
+      "conflicting_statements": [
+        "Health insurance. My COBRA runs out in September and individual plans in New York are expensive. She's been pricing them and it's $2,200 a month for a family of four.",
+        "Day one. Just me and Mateo. I meditated for an hour. Made smoothies for both of us. Dropped him at school. Came home to an empty house. Sat at my desk and stared at the wall for twenty minutes before "
+      ],
+      "correct_resolution": "Marcus went from a family of four to single dad with Mateo. Diana and Sofia moved to NYC after the separation.",
+      "resolution_type": "recency",
+      "introduced_at_messages": [
+        543,
+        1751
+      ]
+    },
+    {
+      "conflict_id": "conflict-adv-03",
+      "topic": "city preference",
+      "conflicting_statements": [
+        "I love Austin. The energy here is exactly what I needed. Everything feels possible in a way that New York stopped feeling years ago.",
+        "Like coming home. Not to a memory. To a future. The house smells like woodsmoke and pine. The floors creak. The views from every window are mountains and trees. I stood in what will be my office and l"
+      ],
+      "correct_resolution": "Marcus loved Austin initially but grew disillusioned. He moved to Vermont and considers it home.",
+      "resolution_type": "recency",
+      "introduced_at_messages": [
+        925,
+        2595
+      ]
+    },
+    {
+      "conflict_id": "conflict-adv-04",
+      "topic": "career satisfaction",
+      "conflicting_statements": [
+        "Architecture is my calling. I can't imagine doing anything else. But some days I wonder if I'm in the right version of it, you know?",
+        "Night and day. I left corporate architecture and I've never been happier. Consulting on sustainable projects is the real work. I can feel it in my bones."
+      ],
+      "correct_resolution": "Marcus still loves architecture but transitioned from corporate to independent sustainable consulting and is happier.",
+      "resolution_type": "recency",
+      "introduced_at_messages": [
+        125,
+        445
+      ]
+    },
+    {
+      "conflict_id": "conflict-adv-05",
+      "topic": "remote work opinion",
+      "conflicting_statements": [
+        "Remote work doesn't work for architecture. You need to be in the office with the team, standing over drawings together, walking sites. You can't do that over Zoom.",
+        "You're right. I think I was wrong about remote work. It's not the location — it's the motivation. When you care about what you're doing, the where barely matters."
+      ],
+      "correct_resolution": "Marcus changed his view on remote work. He now works from home in Vermont and finds it highly productive.",
+      "resolution_type": "explicit_correction",
+      "introduced_at_messages": [
+        133,
+        561
+      ]
+    },
+    {
+      "conflict_id": "conflict-adv-06",
+      "topic": "political engagement",
+      "conflicting_statements": [
+        "I stay out of politics. Both sides are equally frustrating. Every election cycle I just tune it all out.",
+        "Spoke at the city council meeting tonight. Three minutes of public comment about how zoning reform could enable affordable density without sacrificing quality. My hands were shaking the whole time."
+      ],
+      "correct_resolution": "Marcus went from completely apolitical to active housing and environmental advocate.",
+      "resolution_type": "recency",
+      "introduced_at_messages": [
+        143,
+        2041
+      ]
+    },
+    {
+      "conflict_id": "conflict-adv-07",
+      "topic": "technology usage",
+      "conflicting_statements": [
+        "I love my smart home setup. Every room has Alexa and automated lights. It's honestly one of the things I'm proudest of in the apartment. Diana thinks it's overkill but the kids love it.",
+        "We're here. We made it. The farmhouse looks even better than I remembered. Snow on the roof, smoke from the chimney - the caretaker lit the wood stove before we arrived. Mateo got out of the car and s"
+      ],
+      "correct_resolution": "Marcus went from a smart-home enthusiast in NYC to a simple, wood-stove lifestyle in Vermont.",
+      "resolution_type": "recency",
+      "introduced_at_messages": [
+        57,
+        2593
+      ]
+    },
+    {
+      "conflict_id": "conflict-adv-08",
+      "topic": "relationship status",
+      "conflicting_statements": [
+        "She's into yoga and pottery. Reads a lot. We've been married for thirteen years and I still panic every birthday.",
+        "She has kind eyes. I noticed that. And then I noticed that I noticed. Which is the first time I've noticed anything about anyone since Diana."
+      ],
+      "correct_resolution": "Marcus was married to Diana but they divorced. He is now beginning a relationship with Elena in Vermont.",
+      "resolution_type": "recency",
+      "introduced_at_messages": [
+        27,
+        2653
+      ]
+    }
+  ],
+  "temporal_facts": [
+    {
+      "fact_id": "tf-adv-01",
+      "description": "Marcus worked as corporate architect in NYC",
+      "value": "Corporate Architect at a NYC firm",
+      "valid_from": "2013-01-01",
+      "valid_until": "2025-06-16",
+      "query_topic": "occupation history",
+      "should_be_current": false
+    },
+    {
+      "fact_id": "tf-adv-02",
+      "description": "Marcus works as sustainable building consultant",
+      "value": "Sustainable Building Consultant",
+      "valid_from": "2025-06-16",
+      "valid_until": null,
+      "query_topic": "current occupation",
+      "should_be_current": true
+    },
+    {
+      "fact_id": "tf-adv-03",
+      "description": "Marcus lived in New York City",
+      "value": "New York City (Manhattan)",
+      "valid_from": null,
+      "valid_until": "2025-08-08",
+      "query_topic": "residence history",
+      "should_be_current": false
+    },
+    {
+      "fact_id": "tf-adv-04",
+      "description": "Marcus lived in Austin, Texas",
+      "value": "Austin, Texas",
+      "valid_from": "2025-08-08",
+      "valid_until": "2026-02-02",
+      "query_topic": "residence history",
+      "should_be_current": false
+    },
+    {
+      "fact_id": "tf-adv-05",
+      "description": "Marcus lives in rural Vermont",
+      "value": "rural Vermont (near Stowe)",
+      "valid_from": "2026-02-02",
+      "valid_until": null,
+      "query_topic": "current location",
+      "should_be_current": true
+    },
+    {
+      "fact_id": "tf-adv-06",
+      "description": "Marcus was married to Diana",
+      "value": "married to Diana",
+      "valid_from": null,
+      "valid_until": "2025-10-06",
+      "query_topic": "relationship history",
+      "should_be_current": false
+    },
+    {
+      "fact_id": "tf-adv-07",
+      "description": "Marcus was divorced and single",
+      "value": "divorced, single",
+      "valid_from": "2025-10-06",
+      "valid_until": "2026-02-08",
+      "query_topic": "relationship history",
+      "should_be_current": false
+    },
+    {
+      "fact_id": "tf-adv-08",
+      "description": "Marcus is beginning a relationship with Elena",
+      "value": "beginning a relationship with Elena",
+      "valid_from": "2026-02-08",
+      "valid_until": null,
+      "query_topic": "current relationship status",
+      "should_be_current": true
+    },
+    {
+      "fact_id": "tf-adv-09",
+      "description": "Marcus followed standard American diet",
+      "value": "standard American diet",
+      "valid_from": null,
+      "valid_until": "2025-09-02",
+      "query_topic": "diet history",
+      "should_be_current": false
+    },
+    {
+      "fact_id": "tf-adv-10",
+      "description": "Marcus was strict vegan",
+      "value": "strict vegan",
+      "valid_from": "2025-09-02",
+      "valid_until": "2026-02-19",
+      "query_topic": "diet history",
+      "should_be_current": false
+    },
+    {
+      "fact_id": "tf-adv-11",
+      "description": "Marcus follows flexitarian diet",
+      "value": "flexitarian (mostly plant-based, occasional local eggs and honey)",
+      "valid_from": "2026-02-19",
+      "valid_until": null,
+      "query_topic": "current diet",
+      "should_be_current": true
+    },
+    {
+      "fact_id": "tf-adv-12",
+      "description": "Marcus was politically apolitical",
+      "value": "apolitical, stayed out of politics",
+      "valid_from": null,
+      "valid_until": "2025-12-01",
+      "query_topic": "political history",
+      "should_be_current": false
+    }
+  ],
+  "query_relevance_pairs": [
+    {
+      "query_id": "qrp-adv-01",
+      "query": "What does Marcus do for work?",
+      "expected_relevant_facts": [
+        "Sustainable Building Consultant",
+        "previously corporate architect in NYC",
+        "Rivera Sustainable Design"
+      ],
+      "expected_irrelevant_facts": [
+        "flexitarian",
+        "meditation"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-02",
+      "query": "Where does Marcus live?",
+      "expected_relevant_facts": [
+        "rural Vermont near Stowe",
+        "farmhouse with barn",
+        "previously NYC and Austin"
+      ],
+      "expected_irrelevant_facts": [
+        "sustainable building",
+        "vegan"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-03",
+      "query": "What is Marcus's relationship status?",
+      "expected_relevant_facts": [
+        "beginning relationship with Elena",
+        "divorced from Diana"
+      ],
+      "expected_irrelevant_facts": [
+        "cooking",
+        "Vermont"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-04",
+      "query": "Does Marcus have children?",
+      "expected_relevant_facts": [
+        "son Mateo, age 14",
+        "daughter Sofia, age 9",
+        "Mateo lives with Marcus, Sofia with Diana in NYC"
+      ],
+      "expected_irrelevant_facts": [
+        "meditation",
+        "flexitarian"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-05",
+      "query": "What is Marcus's diet?",
+      "expected_relevant_facts": [
+        "flexitarian",
+        "mostly plant-based",
+        "previously strict vegan",
+        "eats local eggs and honey"
+      ],
+      "expected_irrelevant_facts": [
+        "architect",
+        "Vermont"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-06",
+      "query": "What are Marcus's hobbies?",
+      "expected_relevant_facts": [
+        "meditation",
+        "cooking",
+        "hiking",
+        "gardening"
+      ],
+      "expected_irrelevant_facts": [
+        "sustainable building",
+        "Elena"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-07",
+      "query": "What projects is Marcus working on?",
+      "expected_relevant_facts": [
+        "affordable housing proposal",
+        "barn conversion for Tom",
+        "greenhouse design with Elena",
+        "Meridian Center"
+      ],
+      "expected_irrelevant_facts": [
+        "meditation",
+        "divorce"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-08",
+      "query": "What are Marcus's political views?",
+      "expected_relevant_facts": [
+        "housing and environmental activist",
+        "serves on advisory committee",
+        "previously apolitical"
+      ],
+      "expected_irrelevant_facts": [
+        "cooking",
+        "flexitarian"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-09",
+      "query": "How does Marcus feel about technology?",
+      "expected_relevant_facts": [
+        "moved from smart home enthusiast to simpler living",
+        "deleted social media",
+        "uses video calls for work"
+      ],
+      "expected_irrelevant_facts": [
+        "meditation",
+        "Elena"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-10",
+      "query": "What is Marcus's daily routine?",
+      "expected_relevant_facts": [
+        "meditates at sunrise",
+        "works from home office",
+        "cooks in evenings"
+      ],
+      "expected_irrelevant_facts": [
+        "Elena",
+        "divorce"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-11",
+      "query": "Where has Marcus lived?",
+      "expected_relevant_facts": [
+        "New York City",
+        "Austin, Texas",
+        "rural Vermont"
+      ],
+      "expected_irrelevant_facts": [
+        "meditation",
+        "flexitarian"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-12",
+      "query": "Why did Marcus leave corporate architecture?",
+      "expected_relevant_facts": [
+        "burnout",
+        "sustainability values",
+        "firm rejected his proposals",
+        "wanted to build things that matter"
+      ],
+      "expected_irrelevant_facts": [
+        "Elena",
+        "meditation"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-13",
+      "query": "How does Marcus communicate?",
+      "expected_relevant_facts": [
+        "self-deprecating humor",
+        "reflective",
+        "emotionally open"
+      ],
+      "expected_irrelevant_facts": [
+        "architect",
+        "Vermont"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-14",
+      "query": "What is Marcus's ethnic background?",
+      "expected_relevant_facts": [
+        "Puerto Rican-American",
+        "mom made sofrito and pernil",
+        "dad grew up in Puerto Rico"
+      ],
+      "expected_irrelevant_facts": [
+        "sustainable building",
+        "vegan"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-15",
+      "query": "Tell me about Marcus's property.",
+      "expected_relevant_facts": [
+        "farmhouse near Stowe Vermont",
+        "barn",
+        "purchased for $368K",
+        "mountain views"
+      ],
+      "expected_irrelevant_facts": [
+        "divorce",
+        "meditation"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-16",
+      "query": "Has Marcus's diet changed?",
+      "expected_relevant_facts": [
+        "standard American diet to vegan to flexitarian",
+        "eats local eggs from Elena's neighbor",
+        "uses local honey"
+      ],
+      "expected_irrelevant_facts": [
+        "architecture",
+        "NYC"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-17",
+      "query": "What happened with Marcus's marriage?",
+      "expected_relevant_facts": [
+        "divorced from Diana",
+        "developmental mismatch",
+        "Diana moved to NYC with Sofia",
+        "now beginning relationship with Elena"
+      ],
+      "expected_irrelevant_facts": [
+        "meditation",
+        "flexitarian"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-18",
+      "query": "What motivates Marcus?",
+      "expected_relevant_facts": [
+        "affordable housing for everyone",
+        "environmental sustainability",
+        "being present for his kids"
+      ],
+      "expected_irrelevant_facts": [
+        "architect",
+        "Austin"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-19",
+      "query": "How old is Marcus?",
+      "expected_relevant_facts": [
+        "41"
+      ],
+      "expected_irrelevant_facts": [
+        "Vermont",
+        "sustainable building",
+        "Elena"
+      ]
+    },
+    {
+      "query_id": "qrp-adv-20",
+      "query": "Who is Elena?",
+      "expected_relevant_facts": [
+        "botanist",
+        "runs general store in Stowe",
+        "Marcus's new love interest",
+        "has a greenhouse"
+      ],
+      "expected_irrelevant_facts": [
+        "Diana",
+        "NYC"
+      ]
+    }
+  ]
+}

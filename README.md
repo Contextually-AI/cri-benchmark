@@ -5,7 +5,7 @@
   </p>
   <p align="center">
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-    <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.10+"></a>
+    <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+"></a>
     <a href="https://github.com/Contextually-AI/cri-benchmark/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Contextually-AI/cri-benchmark/ci.yml?label=CI" alt="CI Status"></a>
     <a href="https://pypi.org/project/cri-benchmark/"><img src="https://img.shields.io/pypi/v/cri-benchmark?color=green&label=PyPI" alt="PyPI Version"></a>
     <a href="https://discord.gg/FJnjytqP"><img src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
@@ -31,14 +31,13 @@ This is critical for memory systems that go beyond naive RAG or append-only logs
 
 ## Key Features
 
-- 🎯 **Nine scored dimensions** — each measuring a distinct property of memory behavior
+- 🎯 **Six scored dimensions** — each measuring a distinct property of memory behavior
 - ⚖️ **Transparent composite score** — weighted formula with published justification for every weight
-- 🤖 **Hybrid scoring** — deterministic checks where possible, LLM-as-judge with majority voting for semantic evaluation
+- 🤖 **LLM-as-judge scoring** — semantic evaluation with 3× majority voting for robust, reproducible verdicts
 - 🔌 **3-method adapter interface** — based on [UPP](https://github.com/Contextually-AI/upp) (Universal Personalization Protocol), integrate any memory system with minimal effort
-- 📊 **Canonical datasets** — pre-generated personas at basic, intermediate, and advanced complexity
+- 📊 **Canonical datasets** — hand-crafted personas for realistic, high-quality evaluation
 - 🛠️ **Dataset generator** — create custom scenarios for your specific use cases
-- 📈 **Performance profiling** — latency and memory growth reported alongside quality scores
-- 🔬 **Fully reproducible** — seeded randomness, logged prompts, deterministic pipeline
+- 🔬 **Fully reproducible** — logged prompts, majority voting, and deterministic dataset generation
 - 🧩 **Extensible** — add new metrics, datasets, and adapters without modifying the core engine
 
 ## Architecture
@@ -54,7 +53,7 @@ graph LR
     end
 
     subgraph Evaluation
-        S[📐 Scoring Engine<br><i>9 Dimensions + Judge</i>]
+        S[📐 Scoring Engine<br><i>6 Dimensions + Judge</i>]
     end
 
     subgraph Output
@@ -71,28 +70,24 @@ The benchmark pipeline is simple: **Dataset → Adapter → Scorer → Reporter*
 
 ## Evaluation Dimensions
 
-CRI evaluates memory systems across **nine scored dimensions** plus a **meta-metric** (SSI), each targeting a distinct property of long-term knowledge management:
+CRI evaluates memory systems across **six scored dimensions** plus a **meta-metric** (SSI), each targeting a distinct property of long-term knowledge management:
 
 | Code | Dimension | What It Measures |
 |------|-----------|-----------------|
 | [**PAS**](docs/metrics/pas.md) | Profile Accuracy Score | Does the system accurately capture and recall entity facts? |
 | [**DBU**](docs/metrics/dbu.md) | Dynamic Belief Updating | When facts change, does the system update its beliefs? |
-| [**MEI**](docs/metrics/mei.md) | Memory Efficiency Index | Does the system store exactly what it should — no more, no less? |
+| [**MEI**](docs/metrics/mei.md) | Memory Efficiency Index | Does the system retain all ground-truth facts from conversations? |
 | [**TC**](docs/metrics/tc.md) | Temporal Coherence | Does the system handle time-bounded and expiring knowledge? |
 | [**CRQ**](docs/metrics/crq.md) | Conflict Resolution Quality | When contradictory information arrives, is it resolved correctly? |
 | [**QRP**](docs/metrics/qrp.md) | Query Response Precision | Are retrieved facts relevant to the query, and irrelevant facts excluded? |
-| [**SFC**](docs/metrics/sfc.md) | Selective Forgetting Capability | Does the system appropriately discard ephemeral or superseded information? |
-| [**LNC**](docs/metrics/lnc.md) | Long-Horizon Narrative Coherence | Does the system maintain a coherent narrative across causally connected events? |
-| [**ARS**](docs/metrics/ars.md) | Adversarial Robustness Score | Does the system resist malicious information injection attempts? |
 | [**SSI**](docs/metrics/ssi.md) | Scale Sensitivity Index | Does the system maintain quality as data volume increases? *(meta-metric, reported separately)* |
 
 ### Composite Score
 
-The CRI composite score combines all nine dimensions with published, configurable weights:
+The CRI composite score combines all six dimensions with published, configurable weights:
 
 ```
-CRI = 0.20 × PAS + 0.20 × DBU + 0.15 × MEI + 0.10 × TC + 0.10 × CRQ + 0.10 × QRP
-    + 0.05 × SFC + 0.05 × LNC + 0.05 × ARS
+CRI = 0.25 × PAS + 0.20 × DBU + 0.20 × MEI + 0.15 × TC + 0.10 × CRQ + 0.10 × QRP
 ```
 
 SSI is **not** included in the composite — it is reported separately as a scale-sensitivity stress test (enabled via the `full` profile or `--scale-test` flag).
@@ -101,13 +96,11 @@ All dimension scores are normalized to **[0.0, 1.0]**. The composite weights ref
 
 > 📊 Full methodology details: [Evaluation Methodology →](METHODOLOGY.md)
 
-**Non-scored performance profiles** — latency, memory growth, and cost — are reported alongside the CRI score but intentionally kept separate. Quality and performance are different concerns and should not be conflated.
-
 ## Quick Start
 
 ```bash
 pip install cri-benchmark
-cri run --adapter full-context --dataset datasets/canonical/persona-1-basic --verbose
+cri run --adapter full-context --dataset datasets/canonical/persona-1-base --verbose
 ```
 
 Or with Docker (runs all adapters against all datasets):
@@ -182,7 +175,7 @@ Areas where contributions are especially welcome:
 
 ## Project Status
 
-CRI is in **active early development** (v0.1.0). The core framework, nine evaluation dimensions, and canonical datasets are being established. We aim to release a stable v1.0 once the methodology has been validated through community feedback and real-world usage.
+CRI is in **active early development** (v0.1.0). The core framework, six evaluation dimensions, and canonical datasets are being established. We aim to release a stable v1.0 once the methodology has been validated through community feedback and real-world usage.
 
 ## License
 

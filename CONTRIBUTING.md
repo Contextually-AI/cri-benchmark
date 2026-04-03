@@ -433,7 +433,7 @@ PERSONA_4_EXPERT = RichPersonaSpec(
 
 **Guidelines for persona design:**
 
-- Cover all seven dimensions: **PAS**, **DBU**, **MEI**, **TC**, **CRQ**, **QRP**, **SFC**.
+- Cover all six dimensions: **PAS**, **DBU**, **MEI**, **TC**, **CRQ**, **QRP**.
 - Include at least 2–3 belief changes that happen at different points in the conversation.
 - Add conflict scenarios with clear correct resolutions.
 - Include both signal messages (fact-bearing) and noise messages (greetings, filler).

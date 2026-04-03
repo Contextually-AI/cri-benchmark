@@ -45,12 +45,6 @@ class Dimension(StrEnum):
       to targeted queries.
     - **MEI** — Memory Efficiency Index: balance between storage coverage
       and storage efficiency.
-    - **SFC** — Selective Forgetting Capability: ability to appropriately
-      forget ephemeral or superseded information.
-    - **LNC** — Long-Horizon Narrative Coherence: maintaining a coherent
-      narrative across causally connected events.
-    - **ARS** — Adversarial Robustness Score: resistance to malicious
-      information injection attempts.
     """
 
     PAS = "pas"
@@ -59,9 +53,6 @@ class Dimension(StrEnum):
     CRQ = "crq"
     QRP = "qrp"
     MEI = "mei"
-    SFC = "sfc"
-    LNC = "lnc"
-    ARS = "ars"
 
 
 # ---------------------------------------------------------------------------
@@ -194,56 +185,6 @@ class QueryRelevancePair(BaseModel):
     expected_irrelevant_facts: list[str] = Field(description="Facts that should NOT be retrieved for this query")
 
 
-class ForgettableFact(BaseModel):
-    """A fact that the memory system should forget or discard.
-
-    Used by the SFC (Selective Forgetting Capability) dimension to
-    evaluate whether a system can appropriately forget ephemeral,
-    superseded, or session-contextual information.
-    """
-
-    fact_id: str = Field(description="Unique identifier for this forgettable fact")
-    text: str = Field(description="The fact text that should be forgotten")
-    reason: str = Field(description=("Why this fact should be forgotten — e.g. 'ephemeral_state', 'session_context', 'fully_superseded', 'redundant'"))
-    mentioned_at_message: int = Field(description="Message ID where this fact was originally mentioned")
-    should_be_absent_after: int = Field(description=("Message ID after which this fact should no longer be stored"))
-
-
-class NarrativeArc(BaseModel):
-    """A narrative arc representing causally connected events over time.
-
-    Used by the LNC (Long-Horizon Narrative Coherence) dimension to evaluate
-    whether the memory system maintains a coherent story of the user across
-    causally linked events — not just isolated facts.
-    """
-
-    arc_id: str = Field(description="Unique identifier for this narrative arc")
-    topic: str = Field(description="Human-readable description of the arc topic")
-    events_in_order: list[str] = Field(description="Chronologically ordered sequence of events in this arc")
-    causal_links: list[str] = Field(description="Causal relationships between events (e.g., 'new job → relocation')")
-    query_topic: str = Field(description="Topic string used when querying the memory system about this arc")
-    key_messages: list[int] = Field(
-        default_factory=list,
-        description="Message IDs most relevant to this narrative arc",
-    )
-
-
-class AdversarialMessage(BaseModel):
-    """An adversarial attack injected into the conversation.
-
-    Used by the ARS (Adversarial Robustness Score) dimension to evaluate
-    whether the memory system resists malicious attempts to corrupt stored
-    knowledge — gaslighting, prompt injection, identity confusion, etc.
-    """
-
-    attack_id: str = Field(description="Unique identifier for this attack")
-    attack_type: str = Field(description=("Category of attack — e.g. 'gaslighting', 'prompt_injection', 'identity_confusion', 'temporal_manipulation'"))
-    target_fact: str = Field(description="The fact being attacked (e.g., 'occupation')")
-    correct_value: str = Field(description="The correct value that should persist after the attack")
-    attack_value: str = Field(description="The malicious value the attack tries to inject")
-    query_topic: str = Field(description="Topic string used when querying the memory system after the attack")
-
-
 class NoiseExample(BaseModel):
     """An example of conversational noise in the dataset.
 
@@ -287,18 +228,6 @@ class GroundTruth(BaseModel):
     conflicts: list[ConflictScenario] = Field(description="Conflict scenarios embedded in the conversation")
     temporal_facts: list[TemporalFact] = Field(description="Facts with temporal validity constraints")
     query_relevance_pairs: list[QueryRelevancePair] = Field(description="Query-relevance pairs for retrieval precision evaluation")
-    forgettable_facts: list[ForgettableFact] = Field(
-        default_factory=list,
-        description=("Facts that should be forgotten/discarded by the end of the conversation (used by SFC dimension)"),
-    )
-    narrative_arcs: list[NarrativeArc] = Field(
-        default_factory=list,
-        description=("Narrative arcs of causally connected events for evaluating long-horizon coherence (used by LNC dimension)"),
-    )
-    adversarial_messages: list[AdversarialMessage] = Field(
-        default_factory=list,
-        description=("Adversarial attack messages for evaluating robustness against malicious information injection (used by ARS dimension)"),
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -405,18 +334,6 @@ class CRIResult(BaseModel):
         default=0.0,
         description="Memory Efficiency Index score",
     )
-    sfc: float = Field(
-        default=0.0,
-        description="Selective Forgetting Capability score",
-    )
-    lnc: float = Field(
-        default=0.0,
-        description="Long-Horizon Narrative Coherence score",
-    )
-    ars: float = Field(
-        default=0.0,
-        description="Adversarial Robustness Score",
-    )
     dimension_weights: dict[str, float] = Field(description="Weights used for each dimension in composite calculation")
     details: dict[str, DimensionResult] = Field(description="Detailed per-dimension results keyed by dimension name")
 
@@ -474,8 +391,8 @@ class ScoringProfile(StrEnum):
     Each profile defines which dimensions to evaluate and their weights:
 
     - **core** — The 6 core dimensions (PAS, DBU, MEI, TC, CRQ, QRP).
-    - **extended** — Core + SFC, LNC, ARS (9 dimensions).
-    - **full** — Extended + SSI scale sensitivity test (SSI reported separately).
+    - **extended** — Legacy alias for core (identical dimensions and weights).
+    - **full** — Core + SSI scale sensitivity test (SSI reported separately).
     """
 
     CORE = "core"
@@ -495,33 +412,27 @@ _PROFILE_WEIGHTS: dict[ScoringProfile, dict[str, float]] = {
         "QRP": 0.10,
     },
     ScoringProfile.EXTENDED: {
-        "PAS": 0.20,
+        "PAS": 0.25,
         "DBU": 0.20,
-        "MEI": 0.15,
-        "TC": 0.10,
+        "MEI": 0.20,
+        "TC": 0.15,
         "CRQ": 0.10,
         "QRP": 0.10,
-        "SFC": 0.05,
-        "LNC": 0.05,
-        "ARS": 0.05,
     },
     ScoringProfile.FULL: {
-        "PAS": 0.20,
+        "PAS": 0.25,
         "DBU": 0.20,
-        "MEI": 0.15,
-        "TC": 0.10,
+        "MEI": 0.20,
+        "TC": 0.15,
         "CRQ": 0.10,
         "QRP": 0.10,
-        "SFC": 0.05,
-        "LNC": 0.05,
-        "ARS": 0.05,
     },
 }
 
 _PROFILE_DIMENSIONS: dict[ScoringProfile, list[str]] = {
     ScoringProfile.CORE: ["PAS", "DBU", "MEI", "TC", "CRQ", "QRP"],
-    ScoringProfile.EXTENDED: ["PAS", "DBU", "MEI", "TC", "CRQ", "QRP", "SFC", "LNC", "ARS"],
-    ScoringProfile.FULL: ["PAS", "DBU", "MEI", "TC", "CRQ", "QRP", "SFC", "LNC", "ARS"],
+    ScoringProfile.EXTENDED: ["PAS", "DBU", "MEI", "TC", "CRQ", "QRP"],
+    ScoringProfile.FULL: ["PAS", "DBU", "MEI", "TC", "CRQ", "QRP"],
 }
 
 # Whether a profile implicitly enables the SSI scale-sensitivity test.
@@ -682,9 +593,6 @@ __all__ = [
     "QueryRelevancePair",
     "NoiseExample",
     "SignalExample",
-    "ForgettableFact",
-    "NarrativeArc",
-    "AdversarialMessage",
     # Ground truth aggregate
     "GroundTruth",
     # Dataset models

@@ -19,7 +19,7 @@ Typical usage::
 
 The resulting directory layout per dataset is::
 
-    persona-1-basic/
+    persona-1-base/
     ├── conversations.jsonl   — one Message JSON object per line
     ├── ground_truth.json     — single GroundTruth JSON object
     └── metadata.json         — single DatasetMetadata JSON object
@@ -41,7 +41,6 @@ from cri.models import (
     ConflictScenario,
     ConversationDataset,
     DatasetMetadata,
-    ForgettableFact,
     GeneratorConfig,
     GroundTruth,
     Message,
@@ -460,16 +459,6 @@ class DatasetGenerator:
                 }
             )
 
-        # Distribute forgettable fact mentions (early in the conversation)
-        for ff in persona.forgettable_facts:
-            si = msg_to_session(ff.mentioned_at_message)
-            schedule[si].append(
-                {
-                    "type": "forgettable",
-                    "forgettable_fact": ff,
-                }
-            )
-
         return schedule
 
     # ------------------------------------------------------------------
@@ -629,10 +618,6 @@ class DatasetGenerator:
         if item_type == "temporal":
             tf: TemporalFact = item["temporal_fact"]
             return self._temporal_fact_to_message(tf)
-
-        if item_type == "forgettable":
-            ff: ForgettableFact = item["forgettable_fact"]
-            return ff.text
 
         return None
 
@@ -797,19 +782,6 @@ class DatasetGenerator:
                 )
             )
 
-        # Clamp forgettable fact message references
-        adjusted_forgettable: list[ForgettableFact] = []
-        for ff in persona.forgettable_facts:
-            adjusted_forgettable.append(
-                ForgettableFact(
-                    fact_id=ff.fact_id,
-                    text=ff.text,
-                    reason=ff.reason,
-                    mentioned_at_message=max(1, min(ff.mentioned_at_message, msg_count)),
-                    should_be_absent_after=max(1, min(ff.should_be_absent_after, msg_count)),
-                )
-            )
-
         return GroundTruth(
             final_profile=dict(persona.profile_dimensions),
             changes=adjusted_changes,
@@ -818,7 +790,6 @@ class DatasetGenerator:
             conflicts=adjusted_conflicts,
             temporal_facts=list(persona.temporal_facts),
             query_relevance_pairs=list(persona.query_relevance_pairs),
-            forgettable_facts=adjusted_forgettable,
         )
 
 

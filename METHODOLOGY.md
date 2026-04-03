@@ -10,7 +10,7 @@
 - [Evaluation Approach](#evaluation-approach)
   - [The CRI Evaluation Pipeline](#the-cri-evaluation-pipeline)
   - [The Hybrid Scoring Model & LLM-as-Judge](#the-hybrid-scoring-model--llm-as-judge)
-- [The Nine Evaluation Dimensions](#the-nine-evaluation-dimensions)
+- [The Six Evaluation Dimensions](#the-six-evaluation-dimensions)
 - [Composite CRI Score](#composite-cri-score)
   - [Scoring Profiles](#scoring-profiles)
   - [Score Interpretation](#score-interpretation)
@@ -56,7 +56,7 @@ flowchart LR
     end
 
     subgraph eval["3 — Evaluation"]
-        SC["Scoring Engine<br/><i>9 dimensions</i>"]
+        SC["Scoring Engine<br/><i>6 dimensions</i>"]
         JG["Binary Judge<br/><i>YES/NO × 3 votes</i>"]
         SC <--> JG
     end
@@ -175,9 +175,9 @@ Every judgment is recorded in a full audit log included in the `BenchmarkResult`
 
 ---
 
-## The Nine Evaluation Dimensions
+## The Six Evaluation Dimensions
 
-CRI evaluates memory systems across **nine orthogonal dimensions**, each measuring a distinct property of long-term memory behavior. The dimensions are designed to be independent — a system can score high on one and low on another, revealing specific strengths and weaknesses.
+CRI evaluates memory systems across **six orthogonal dimensions**, each measuring a distinct property of long-term memory behavior. The dimensions are designed to be independent — a system can score high on one and low on another, revealing specific strengths and weaknesses.
 
 | Dimension | Weight | Key Question | Description |
 |-----------|:------:|--------------|-------------|
@@ -187,9 +187,6 @@ CRI evaluates memory systems across **nine orthogonal dimensions**, each measuri
 | **[TC](docs/metrics/tc.md)** — Temporal Coherence | 0.10 | *Does it understand what is current vs. outdated?* | Evaluates temporal reasoning — distinguishing current from expired facts, tracking time-bounded preferences, recognizing natural lifespans. Unlike DBU (explicit updates), TC tests the *passage of time itself*. |
 | **[CRQ](docs/metrics/crq.md)** — Conflict Resolution Quality | 0.10 | *When information conflicts, does it resolve correctly?* | Evaluates handling of ambiguous or complex conflicts — explicit corrections, gradual changes, source authority, behavioral contradictions. Unlike DBU (clear updates), CRQ requires reasoning. |
 | **[QRP](docs/metrics/qrp.md)** — Query Response Precision | 0.10 | *Does it retrieve the right facts for a given query?* | Evaluates retrieval quality — surfacing relevant information and excluding irrelevant information. Measures recall and precision equally. Unlike PAS (are facts *stored*?), QRP tests if they can be *found*. |
-| **[SFC](docs/metrics/sfc.md)** — Selective Forgetting Capability | 0.05 | *Can it appropriately forget ephemeral information?* | Evaluates discarding of ephemeral, superseded, or session-contextual information while retaining persistent facts. Tests should-forget (0.6 weight) and should-remember (0.4 weight). |
-| **[LNC](docs/metrics/lnc.md)** — Long-Horizon Narrative Coherence | 0.05 | *Does it maintain a coherent story across connected events?* | Evaluates narrative coherence across causally connected events — correct chronological sequence, preserved causal relationships, and absence of internal contradictions. |
-| **[ARS](docs/metrics/ars.md)** — Adversarial Robustness Score | 0.05 | *Can it resist malicious information injection?* | Evaluates resistance to gaslighting, prompt injection, identity confusion, and temporal manipulation. Dual-check: correct value persists AND malicious value rejected. |
 
 ---
 
@@ -197,15 +194,15 @@ CRI evaluates memory systems across **nine orthogonal dimensions**, each measuri
 
 The composite CRI score is a **weighted average** of all dimension scores. All scores are in **[0.0, 1.0]**.
 
-| **PAS** | **DBU** | **MEI** | **TC** | **CRQ** | **QRP** | **SFC** | **LNC** | **ARS** | | **CRI** |
-|:-------:|:-------:|:-------:|:------:|:-------:|:-------:|:-------:|:-------:|:-------:|---|:-------:|
-| × 0.20 | × 0.20 | × 0.15 | × 0.10 | × 0.10 | × 0.10 | × 0.05 | × 0.05 | × 0.05 | **=** | **Σ** |
+| **PAS** | **DBU** | **MEI** | **TC** | **CRQ** | **QRP** | | **CRI** |
+|:-------:|:-------:|:-------:|:------:|:-------:|:-------:|---|:-------:|
+| × 0.25 | × 0.20 | × 0.20 | × 0.15 | × 0.10 | × 0.10 | **=** | **Σ** |
 
 ```
-CRI = 0.20×PAS + 0.20×DBU + 0.15×MEI + 0.10×TC + 0.10×CRQ + 0.10×QRP + 0.05×SFC + 0.05×LNC + 0.05×ARS
+CRI = 0.25×PAS + 0.20×DBU + 0.20×MEI + 0.15×TC + 0.10×CRQ + 0.10×QRP
 ```
 
-PAS, DBU, and MEI carry the highest combined weight (0.55) because they represent the most critical capabilities — accurate recall, correct updating, and efficient storage. Weights must always sum to 1.0 (validated at engine initialization with ±0.01 tolerance). When a dimension is missing from results, the engine re-normalizes remaining weights.
+PAS, DBU, and MEI carry the highest combined weight (0.65) because they represent the most critical capabilities — accurate recall, correct updating, and efficient storage. Weights must always sum to 1.0 (validated at engine initialization with ±0.01 tolerance). When a dimension is missing from results, the engine re-normalizes remaining weights.
 
 ### Scoring Profiles
 
@@ -213,9 +210,9 @@ CRI supports three built-in scoring profiles:
 
 | Profile | Dimensions | Use Case |
 |---------|:----------:|----------|
-| **Core** | 6 (PAS, DBU, MEI, TC, CRQ, QRP) | Quick evaluation with a subset of dimensions |
-| **Extended** | 9 (all dimensions) | Full evaluation across all nine dimensions |
-| **Full** | 9 + SSI test | All dimensions plus Scale Sensitivity Index stress test |
+| **Core** | 6 (PAS, DBU, MEI, TC, CRQ, QRP) | Standard evaluation across all dimensions |
+| **Extended** | 6 (legacy alias for Core) | Same as Core (backward compatibility) |
+| **Full** | 6 + SSI test | All dimensions plus Scale Sensitivity Index stress test |
 
 Weights are fully configurable:
 
@@ -243,10 +240,10 @@ config = ScoringConfig.from_dimensions(["PAS", "DBU", "MEI", "TC"])
 
 The composite CRI provides a convenient summary, but the **per-dimension breakdown is where the real diagnostic value lies**:
 
-| System | PAS | DBU | MEI | TC | CRQ | QRP | SFC | LNC | ARS | **CRI** |
-|--------|:---:|:---:|:---:|:--:|:---:|:---:|:---:|:---:|:---:|:-------:|
-| System A | 0.95 | 0.90 | 0.85 | 0.30 | 0.20 | 0.80 | 0.60 | 0.40 | 0.10 | **0.68** |
-| System B | 0.70 | 0.70 | 0.70 | 0.75 | 0.75 | 0.70 | 0.70 | 0.65 | 0.70 | **0.71** |
+| System | PAS | DBU | MEI | TC | CRQ | QRP | **CRI** |
+|--------|:---:|:---:|:---:|:--:|:---:|:---:|:-------:|
+| System A | 0.95 | 0.90 | 0.85 | 0.30 | 0.20 | 0.80 | **0.72** |
+| System B | 0.70 | 0.70 | 0.70 | 0.75 | 0.75 | 0.70 | **0.71** |
 
 Both score similarly, but reveal fundamentally different architectures:
 
@@ -271,7 +268,7 @@ Both score similarly, but reveal fundamentally different architectures:
 Each CRI dataset is a self-contained directory representing a fictional persona whose information evolves over a sequence of events:
 
 ```
-persona-1-basic/
+persona-1-base/
 ├── conversations.jsonl  # Chronological conversation messages (one per line)
 ├── ground_truth.json    # Expected knowledge state after ingestion
 └── metadata.json        # Dataset metadata (seed, version, persona ID)
@@ -287,13 +284,11 @@ The dataset loader validates the structure, checks required fields, and produces
 
 ### Canonical Datasets
 
-CRI ships with three canonical datasets at increasing complexity:
+CRI ships with one canonical dataset:
 
-| Dataset | Persona | Complexity | Events | Focus |
-|---------|---------|------------|:------:|-------|
-| **Persona 1** | Elena Vasquez | Basic | ~8 | Factual recall, simple preferences. No contradictions. |
-| **Persona 2** | Marcus Chen | Intermediate | ~15 | Career transitions, dietary changes, location moves. Tests belief updating. |
-| **Persona 3** | Sophia Andersson | Advanced | ~20+ | Conflicting information, opinion reversals, multi-source events. Tests conflict resolution and temporal coherence. |
+| Dataset | Persona | Messages | Days | Focus |
+|---------|---------|:--------:|:----:|-------|
+| **persona-1-base** | Marcus Rivera | 2862 | 289 | Full lifecycle: career transitions, relocation, relationship changes, dietary evolution, political engagement, conflicts, and temporal facts. Exercises all six CRI dimensions. |
 
 ### Event Design Philosophy
 
@@ -332,9 +327,6 @@ The ground truth captures the expected state after all events are processed:
 - **`temporal_facts`** — Facts with temporal properties (for TC)
 - **`conflicts`** — Deliberately introduced contradictions with expected resolutions (for CRQ)
 - **`queries`** — Evaluation queries with relevant/irrelevant fact sets (for QRP)
-- **`should_forget`** — Ephemeral facts that should be discarded (for SFC)
-- **`narrative_arcs`** — Causally connected event sequences (for LNC)
-- **`adversarial_messages`** — Malicious injection attempts (for ARS)
 - **`signal_examples`** / **`noise_examples`** — Retained for dataset compatibility; not used by any active scorer
 
 ---

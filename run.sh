@@ -7,7 +7,7 @@ set -euo pipefail
 #   ./run.sh                                        All adapters, all datasets
 #   ./run.sh --limit 50                             Smoke test (50 messages)
 #   ./run.sh --adapter rag                          Single adapter, all datasets
-#   ./run.sh --adapter rag --dataset datasets/canonical/persona-1-basic
+#   ./run.sh --adapter rag --dataset datasets/canonical/persona-1-base
 #   ./run.sh --adapter rag --adapter full-context   Multiple adapters
 #   ./run.sh --format markdown --verbose            Extra flags forwarded to cri
 
@@ -168,7 +168,7 @@ python3 -c "
 import json, os, sys
 
 results_dir = sys.argv[1]
-dims = ['PAS','DBU','MEI','TC','CRQ','QRP','SFC','LNC','ARS']
+dims = ['PAS','DBU','MEI','TC','CRQ','QRP']
 
 # Collect results
 rows = []

@@ -46,18 +46,12 @@ Expected output:
 ═══ Canonical Datasets ═══
 
  Name                     Messages   Ground Truth   Path
- persona-1-basic              1000   ✓              datasets/canonical/persona-1-basic
- persona-2-intermediate       2000   ✓              datasets/canonical/persona-2-intermediate
- persona-3-advanced           3000   ✓              datasets/canonical/persona-3-advanced
+ persona-1-base               2862   ✓              datasets/canonical/persona-1-base
 ```
 
-Each dataset represents a different complexity level:
-
-| Dataset | Persona | Profile Dims | Belief Changes | Conflicts |
-|---------|---------|-------------|----------------|-----------|
-| `persona-1-basic` | Alex Chen | 10 | 3 | 3 |
-| `persona-2-intermediate` | Sarah Miller | 14 | 5 | 5 |
-| `persona-3-advanced` | Marcus Rivera | 18 | 7 | 7 |
+| Dataset | Persona | Messages | Profile Dims | Belief Changes | Conflicts |
+|---------|---------|----------|-------------|----------------|-----------|
+| `persona-1-base` | Marcus Rivera | 2862 | 18 | 7 | 8 |
 
 ## Step 4 — Explore Available Adapters
 
@@ -80,12 +74,12 @@ Expected output:
 
 ## Step 5 — Run Your First Benchmark
 
-Start with the **no-memory** baseline on the simplest dataset:
+Start with the **no-memory** baseline:
 
 ```bash
 cri run \
   --adapter no-memory \
-  --dataset datasets/canonical/persona-1-basic \
+  --dataset datasets/canonical/persona-1-base \
   --verbose
 ```
 
@@ -96,7 +90,7 @@ cri run \
 ```bash
 cri run \
   --adapter full-context \
-  --dataset datasets/canonical/persona-1-basic \
+  --dataset datasets/canonical/persona-1-base \
   --verbose
 ```
 
@@ -109,8 +103,8 @@ Write structured results to a directory:
 ```bash
 cri run \
   --adapter full-context \
-  --dataset datasets/canonical/persona-1-basic \
-  --output results/full-context-basic \
+  --dataset datasets/canonical/persona-1-base \
+  --output results/full-context-base \
   --format json \
   --verbose
 ```
@@ -118,7 +112,7 @@ cri run \
 This creates:
 
 ```
-results/full-context-basic/
+results/full-context-base/
 ├── result.json        # Complete BenchmarkResult (CRI scores + performance)
 └── judge_log.json     # Full log of every judge evaluation
 ```
@@ -145,18 +139,18 @@ See the [README](../../README.md#run-with-docker-runsh) for the full parameter r
 Before running a benchmark, you can validate a dataset's structure:
 
 ```bash
-cri validate-dataset datasets/canonical/persona-1-basic
+cri validate-dataset datasets/canonical/persona-1-base
 ```
 
 ```
-Validating dataset: datasets/canonical/persona-1-basic
+Validating dataset: datasets/canonical/persona-1-base
 
 ✓ Dataset is valid.
-  Messages:           1000
-  Profile dimensions: 10
-  Belief changes:     3
-  Conflicts:          3
-  Temporal facts:     5
+  Messages:           2862
+  Profile dimensions: 18
+  Belief changes:     7
+  Conflicts:          8
+  Temporal facts:     12
 ```
 
 ## Benchmark Pipeline

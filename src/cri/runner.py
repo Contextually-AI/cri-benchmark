@@ -508,7 +508,7 @@ def main() -> None:
     "profile",
     default=None,
     type=click.Choice(["core", "extended", "full"]),
-    help=("Scoring profile: 'core' (PAS, DBU, MEI, TC, CRQ, QRP), 'extended' (+ SFC), or 'full' (+ SSI scale test)."),
+    help=("Scoring profile: 'core' (PAS, DBU, MEI, TC, CRQ, QRP), 'extended' (legacy alias for core), or 'full' (core + SSI scale test)."),
 )
 @click.option(
     "--dimensions",

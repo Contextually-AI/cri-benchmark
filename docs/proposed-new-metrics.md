@@ -30,7 +30,7 @@
 
 ## Executive Summary
 
-**12 candidate metrics** are proposed to expand the CRI Benchmark beyond its current 9 implemented dimensions (+ SSI, now implemented). Each metric was identified through analysis of existing memory system architectures and gaps in the current CRI evaluation.
+**12 candidate metrics** are proposed to expand the CRI Benchmark beyond its current 6 implemented dimensions (+ SSI, now implemented). Each metric was identified through analysis of existing memory system architectures and gaps in the current CRI evaluation.
 
 ---
 
@@ -87,7 +87,7 @@ This inverts the difficulty and changes scales (where less is better) and adds t
 
 #### Motivation
 
-Memory systems commonly define durability levels: `permanent` (name, date of birth), `transient` (current city, job), `ephemeral` (mood, current activity). TC measures whether the system understands *when* something is current, and SFC measures whether it forgets ephemeral info. But neither measures whether the system treats facts of different *temporal nature* differently. A person's name is permanent; their current city is transient; their current activity is ephemeral. A good system must reflect these differences.
+Memory systems commonly define durability levels: `permanent` (name, date of birth), `transient` (current city, job), `ephemeral` (mood, current activity). TC measures whether the system understands *when* something is current. But it does not measure whether the system treats facts of different *temporal nature* differently. A person's name is permanent; their current city is transient; their current activity is ephemeral. A good system must reflect these differences.
 
 #### Formal Definition
 
@@ -113,7 +113,7 @@ DAS = weighted_average(
   "durability_annotations": [
     {
       "fact_id": "da-01",
-      "text": "Name is Alex Chen",
+      "text": "Name is Marcus Rivera",
       "durability": "permanent",
       "expected_present": true
     },
@@ -150,9 +150,9 @@ DAS = weighted_average(
 **Requires minor changes:**
 - **Adapter protocol:** No changes — uses existing `get_all_facts()` and `query()`
 - **Ground truth schema:** Add `durability_annotations: list[DurabilityAnnotation]` to `GroundTruth` model
-- **Datasets:** Add durability annotations to all 3 canonical datasets (can be partially derived from existing `temporal_facts`)
+- **Datasets:** Add durability annotations to the canonical dataset (can be partially derived from existing `temporal_facts`)
 - **Rubrics:** New rubrics for each durability type
-- **Overlap with TC/SFC:** There is partial overlap with TC (temporal facts) and SFC (forgetting). Could be designed as a *generalization* that subsumes aspects of both.
+- **Overlap with TC:** There is partial overlap with TC (temporal facts). Could be designed as a *generalization* that subsumes aspects of TC.
 
 ---
 
@@ -182,7 +182,7 @@ where:
   "implicit_facts": [
     {
       "fact_id": "if-01",
-      "implicit_fact": "Alex has a pet",
+      "implicit_fact": "Marcus has a pet",
       "derivable_from_messages": [30, 45, 120],
       "source_quotes": [
         "Luna, my rescue cat, is curled up on my desk",
@@ -193,7 +193,7 @@ where:
     },
     {
       "fact_id": "if-02",
-      "implicit_fact": "Alex works during daytime hours",
+      "implicit_fact": "Marcus works during daytime hours",
       "derivable_from_messages": [15, 80, 200],
       "source_quotes": [
         "exercises in the mornings before work",
@@ -248,7 +248,7 @@ Answer YES or NO.
 **Requires moderate changes:**
 - **Adapter protocol:** No changes — uses existing `query()`
 - **Ground truth schema:** Add `implicit_facts: list[ImplicitFact]` to `GroundTruth` model
-- **Datasets:** Design and annotate implicit facts for all 3 datasets. This requires careful analysis of conversations to identify facts that are derivable but never explicitly stated
+- **Datasets:** Design and annotate implicit facts for the canonical dataset. This requires careful analysis of conversations to identify facts that are derivable but never explicitly stated
 - **Chat design:** Current datasets may need additional conversations containing richer implicit facts
 - **Rubrics:** New rubrics specific to inference
 
@@ -311,7 +311,7 @@ CSC > 1.0 → Sessions improve memory (possible if the system consolidates betwe
 
 #### Motivation
 
-Current dimensions evaluate *recall* (does it remember the fact?) and *update* (did it update the fact?). CIQ evaluates *reasoning*: given a set of stored facts, can the system infer causal relationships? Example: "Alex moved to Denver" + "Alex changed jobs" → Can the system infer a relationship between both events?
+Current dimensions evaluate *recall* (does it remember the fact?) and *update* (did it update the fact?). CIQ evaluates *reasoning*: given a set of stored facts, can the system infer causal relationships? Example: "Marcus moved to Denver" + "Marcus changed jobs" → Can the system infer a relationship between both events?
 
 #### Formal Definition
 
@@ -336,17 +336,17 @@ CIQ = average(
   "causal_chains": [
     {
       "chain_id": "cc-01",
-      "cause": "Alex got new job opportunities in Denver",
-      "effect": "Alex moved from San Francisco to Denver",
-      "query_topic": "Why did Alex move?",
+      "cause": "Marcus got new job opportunities in Denver",
+      "effect": "Marcus moved from San Francisco to Denver",
+      "query_topic": "Why did Marcus move?",
       "evidence_messages": [180, 195, 200],
       "expected_in_memory": true
     },
     {
       "chain_id": "cc-02",
-      "cause": "Alex became health-conscious",
-      "effect": "Alex went vegetarian",
-      "query_topic": "Why did Alex change diet?",
+      "cause": "Marcus became health-conscious",
+      "effect": "Marcus went vegetarian",
+      "query_topic": "Why did Marcus change diet?",
       "evidence_messages": [450, 480, 500],
       "expected_in_memory": true
     }
@@ -354,8 +354,8 @@ CIQ = average(
   "non_causal_pairs": [
     {
       "pair_id": "nc-01",
-      "fact_a": "Alex moved to Denver",
-      "fact_b": "Alex has a cat named Luna",
+      "fact_a": "Marcus moved to Denver",
+      "fact_b": "Marcus has a cat named Luna",
       "note": "These facts are not causally related"
     }
   ]
@@ -377,7 +377,7 @@ CIQ = average(
 **Requires moderate changes:**
 - **Adapter protocol:** The current `query()` function returns facts; to evaluate causality, ideally the adapter should be able to answer "why?" questions. If not, it can be evaluated whether stored facts *contain* causal information, even if the adapter doesn't explicitly reason
 - **Ground truth:** New field `causal_chains` + `non_causal_pairs`
-- **Datasets:** Annotate causal chains in all 3 datasets
+- **Datasets:** Annotate causal chains in the canonical dataset
 - **Fundamental limitation:** The current adapter protocol (`query() → list[StoredFact]`) is not designed for reasoning. CIQ can only evaluate whether stored facts *contain* causal information, not whether the system *reasons* causally. For a complete evaluation, a method like `reason(question: str) → str` would be needed in the adapter.
 
 ---
@@ -421,7 +421,7 @@ MER = weighted_average(
       "entity_id": "se-01",
       "name": "Luna",
       "type": "pet",
-      "relationship_to_primary": "Alex's rescue cat",
+      "relationship_to_primary": "Marcus's rescue cat",
       "known_facts": ["rescue cat", "curls up on desk"],
       "query_topic": "Luna"
     },
@@ -429,7 +429,7 @@ MER = weighted_average(
       "entity_id": "se-02",
       "name": "Sarah",
       "type": "person",
-      "relationship_to_primary": "Alex's climbing partner",
+      "relationship_to_primary": "Marcus's climbing partner",
       "known_facts": ["climbing partner", "met at the gym"],
       "query_topic": "Sarah"
     }
@@ -437,10 +437,10 @@ MER = weighted_average(
   "entity_relationships": [
     {
       "rel_id": "rel-01",
-      "entity_a": "Alex",
+      "entity_a": "Marcus",
       "entity_b": "Luna",
       "relationship": "owner-pet",
-      "query_topic": "Alex's relationship with Luna"
+      "query_topic": "Marcus's relationship with Luna"
     }
   ]
 }
@@ -462,7 +462,7 @@ MER = weighted_average(
 - **Adapter protocol:** `query()` can search by entity name; no changes needed
 - **Ground truth:** Add `secondary_entities` and `entity_relationships`
 - **Datasets:** **Largest change:** Current chats mention Luna (the cat) and little else. For robust evaluation, conversations with multiple well-developed secondary entities (friends, family, colleagues, etc.) are needed
-- **Chat design:** Recommended to create a new dataset specifically for MER, or enrich persona-3-advanced with more entities
+- **Chat design:** Recommended to create a new dataset specifically for MER, or enrich persona-1-base with more entities
 
 ---
 
@@ -472,14 +472,14 @@ MER = weighted_average(
 
 #### Motivation
 
-Current dimensions evaluate individual facts. SAQ evaluates whether the system can generate *summaries* or *abstractions* of all stored information. Example: given 1,000 messages about Alex, can the system generate a coherent summary profile? This is the ability to consolidate accumulated knowledge into higher-level representations — one of the capabilities where systems fail the most.
+Current dimensions evaluate individual facts. SAQ evaluates whether the system can generate *summaries* or *abstractions* of all stored information. Example: given 1,000 messages about Marcus, can the system generate a coherent summary profile? This is the ability to consolidate accumulated knowledge into higher-level representations — one of the capabilities where systems fail the most.
 
 #### Formal Definition
 
 ```
 SAQ evaluates the quality of abstractions/summaries generated by the system.
 
-1. Query the adapter with a broad topic (e.g., "everything about Alex")
+1. Query the adapter with a broad topic (e.g., "everything about Marcus")
 2. Compare returned facts against an "ideal profile" from ground truth
 3. Judge: Do the facts form a coherent and complete summary?
 
@@ -653,7 +653,7 @@ RBE = AUC of the quality@budget curve
 
 #### Motivation
 
-Stored facts are not independent — they form a knowledge graph. "Alex works at a fintech" + "Alex lives in Denver" + "Alex has a cat Luna" form a subgraph. KGC evaluates whether the implicit relationships in this graph are coherent (no structural contradictions, relationships are valid, etc.).
+Stored facts are not independent — they form a knowledge graph. "Marcus works at a fintech" + "Marcus lives in Denver" + "Marcus has a cat Luna" form a subgraph. KGC evaluates whether the implicit relationships in this graph are coherent (no structural contradictions, relationships are valid, etc.).
 
 #### Formal Definition
 
@@ -697,7 +697,7 @@ KGC = coherent_pairs / total_evaluated_pairs
 
 #### Motivation
 
-If a system classifies "Alex lives in Denver" as a "hobby" fact instead of "location," its internal organization is deficient, which will degrade future retrieval and updates. OCA evaluates whether the system's internal classification of facts into categories (WHO, WHAT, WHERE, WHEN, etc.) is correct.
+If a system classifies "Marcus lives in Denver" as a "hobby" fact instead of "location," its internal organization is deficient, which will degrade future retrieval and updates. OCA evaluates whether the system's internal classification of facts into categories (WHO, WHAT, WHERE, WHEN, etc.) is correct.
 
 #### Formal Definition
 

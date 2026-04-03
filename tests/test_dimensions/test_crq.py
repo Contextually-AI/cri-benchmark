@@ -7,7 +7,7 @@ Tests both the new ``CRQDimension`` (binary verdict, MetricDimension) and the
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -93,7 +93,8 @@ def _make_mock_judge(verdicts: list[Verdict]) -> MagicMock:
     """Create a mock BinaryJudge that returns verdicts in order."""
     judge = MagicMock()
     results = [_make_judgment(f"crq-c{i}", v) for i, v in enumerate(verdicts, start=1)]
-    judge.judge.side_effect = results
+    judge.judge = AsyncMock(side_effect=list(results))
+    judge.judge_across_chunks = AsyncMock(side_effect=list(results))
     return judge
 
 
@@ -273,8 +274,8 @@ class TestCRQDimension:
 
         asyncio.get_event_loop().run_until_complete(dim.score(adapter, gt, judge))
 
-        assert judge.judge.call_count == 2
-        check_ids = [call.kwargs["check_id"] for call in judge.judge.call_args_list]
+        assert judge.judge_across_chunks.call_count == 2
+        check_ids = [call.kwargs["check_id"] if "check_id" in call.kwargs else call.args[0] for call in judge.judge_across_chunks.call_args_list]
         assert check_ids == ["crq-alpha", "crq-beta"]
 
     def test_empty_stored_facts(self) -> None:
@@ -289,4 +290,4 @@ class TestCRQDimension:
 
         assert result.score == 0.0
         assert result.total_checks == 1
-        assert judge.judge.call_count == 1
+        assert judge.judge_across_chunks.call_count == 1

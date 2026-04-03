@@ -42,11 +42,16 @@ from cri.scoring.dimensions.qrp import QRPDimension
 # ---------------------------------------------------------------------------
 
 
+_DEFAULT_FACTS = [StoredFact(text="placeholder fact for testing")]
+
+
 class MockQRPAdapter:
     """Mock adapter that returns predetermined facts per query string.
 
     Facts are configured via the *facts_by_query* mapping. Queries not
-    present in the mapping return an empty list.
+    present in the mapping return a default non-empty fact list so that
+    the judge evaluation path is exercised.  Use ``EmptyQRPAdapter`` to
+    test the zero-facts-returned case.
     """
 
     def __init__(self, facts_by_query: dict[str, list[StoredFact]] | None = None) -> None:
@@ -55,13 +60,30 @@ class MockQRPAdapter:
 
     def retrieve(self, topic: str) -> list[StoredFact]:
         self.queries.append(topic)
-        return self.facts_by_query.get(topic, [])
+        return self.facts_by_query.get(topic, list(_DEFAULT_FACTS))
 
     def get_events(self) -> list[StoredFact]:
         all_facts: list[StoredFact] = []
         for facts in self.facts_by_query.values():
             all_facts.extend(facts)
-        return all_facts
+        return all_facts or list(_DEFAULT_FACTS)
+
+    def ingest(self, messages: list[Any]) -> None:
+        pass
+
+
+class EmptyQRPAdapter:
+    """Mock adapter that always returns no facts — for zero-facts tests."""
+
+    def __init__(self) -> None:
+        self.queries: list[str] = []
+
+    def retrieve(self, topic: str) -> list[StoredFact]:
+        self.queries.append(topic)
+        return []
+
+    def get_events(self) -> list[StoredFact]:
+        return []
 
     def ingest(self, messages: list[Any]) -> None:
         pass
@@ -79,7 +101,7 @@ class MockQRPJudge:
         self.overrides = overrides or {}
         self.call_log: list[dict[str, Any]] = []
 
-    def judge(self, check_id: str, prompt: str) -> JudgmentResult:
+    async def judge(self, check_id: str, prompt: str) -> JudgmentResult:
         verdict = self.overrides.get(check_id, self.default_verdict)
         self.call_log.append({"check_id": check_id, "prompt": prompt})
         return JudgmentResult(
@@ -90,6 +112,10 @@ class MockQRPJudge:
             prompt=prompt,
             raw_responses=[verdict.value] * 3,
         )
+
+    async def judge_across_chunks(self, check_id: str, stored_facts: list[str], prompt_builder) -> JudgmentResult:
+        prompt = prompt_builder(stored_facts)
+        return await self.judge(check_id, prompt)
 
 
 def _make_ground_truth(
@@ -588,22 +614,17 @@ class TestQRPDimension:
         assert adapter.queries == ["What is the user's job?", "What are the hobbies?"]
 
     def test_empty_adapter_response(self) -> None:
-        """When adapter returns no facts, checks still run."""
+        """When adapter returns no facts, pair scores 0 — no useful response."""
         pair = _make_pair(query_id="qrp-1", relevant=["A"], irrelevant=["B"])
-        adapter = MockQRPAdapter()  # returns empty lists
-        judge = MockQRPJudge(
-            overrides={
-                "qrp_rel_qrp-1_0": Verdict.NO,  # not found
-                "qrp_irr_qrp-1_0": Verdict.NO,  # excluded (pass)
-            },
-        )
+        adapter = EmptyQRPAdapter()
+        judge = MockQRPJudge()
         gt = _make_ground_truth(pairs=[pair])
 
         result = _run(QRPDimension().score(adapter, gt, judge))
 
         assert result.total_checks == 2
-        # recall=0/1=0.0, precision=1/1=1.0 → 0.5*0.0 + 0.5*1.0 = 0.5
-        assert result.score == pytest.approx(0.5)
+        # 0 facts returned → recall=0, precision=0 → pair_score=0
+        assert result.score == pytest.approx(0.0)
         assert result.details[0]["num_returned_facts"] == 0
         assert result.details[1]["num_returned_facts"] == 0
 
