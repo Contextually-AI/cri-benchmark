@@ -1,12 +1,12 @@
-"""Tests for the CRI Benchmark dataset loader — both legacy and new API.
+"""Tests for the CRI Benchmark dataset loader.
 
 Covers:
-- New module-level functions (load_messages, load_ground_truth, load_dataset,
-  validate_dataset, list_canonical_datasets)
+- Module-level functions (load_messages, load_ground_truth, load_dataset,
+  validate_dataset, list_datasets)
 - JSONL loading edge cases
 - JSON ground truth loading and schema validation
 - Dataset validation catches all known error types
-- list_canonical_datasets discovery behavior
+- list_datasets discovery behavior
 - Integration: round-trip load → validate
 """
 
@@ -19,7 +19,7 @@ import pytest
 
 from cri.datasets.loader import (
     DatasetInfo,
-    list_canonical_datasets,
+    list_datasets,
     load_dataset,
     load_ground_truth,
     load_messages,
@@ -844,15 +844,15 @@ class TestValidateDataset:
 
 
 # ===================================================================
-# New API — list_canonical_datasets
+# New API — list_datasets
 # ===================================================================
 
 
-class TestListCanonicalDatasets:
-    """Test list_canonical_datasets discovery behavior."""
+class TestListDatasets:
+    """Test list_datasets discovery behavior."""
 
     def test_returns_list_of_dataset_info(self) -> None:
-        results = list_canonical_datasets()
+        results = list_datasets()
         assert isinstance(results, list)
         for info in results:
             assert isinstance(info, DatasetInfo)
@@ -863,20 +863,20 @@ class TestListCanonicalDatasets:
     def test_returns_empty_for_nonexistent_dir(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         import cri.datasets.loader as loader_module
 
-        monkeypatch.setattr(loader_module, "CANONICAL_DATASETS_DIR", tmp_path / "nope")
+        monkeypatch.setattr(loader_module, "DATASETS_DIR", tmp_path / "nope")
 
-        results = list_canonical_datasets()
+        results = list_datasets()
         assert results == []
 
     def test_discovers_new_format_datasets(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         import cri.datasets.loader as loader_module
 
-        monkeypatch.setattr(loader_module, "CANONICAL_DATASETS_DIR", tmp_path)
+        monkeypatch.setattr(loader_module, "DATASETS_DIR", tmp_path)
 
         _write_dataset(tmp_path, name="alpha-dataset")
         _write_dataset(tmp_path, name="beta-dataset")
 
-        results = list_canonical_datasets()
+        results = list_datasets()
         assert len(results) == 2
         names = [r.name for r in results]
         assert "alpha-dataset" in names
@@ -885,12 +885,12 @@ class TestListCanonicalDatasets:
     def test_dataset_info_has_ground_truth_flag(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         import cri.datasets.loader as loader_module
 
-        monkeypatch.setattr(loader_module, "CANONICAL_DATASETS_DIR", tmp_path)
+        monkeypatch.setattr(loader_module, "DATASETS_DIR", tmp_path)
 
         _write_dataset(tmp_path, name="with-gt")
         _write_dataset(tmp_path, name="no-gt", skip_ground_truth=True)
 
-        results = list_canonical_datasets()
+        results = list_datasets()
         by_name = {r.name: r for r in results}
         assert by_name["with-gt"].has_ground_truth is True
         assert by_name["no-gt"].has_ground_truth is False
@@ -898,23 +898,23 @@ class TestListCanonicalDatasets:
     def test_message_count_from_jsonl(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         import cri.datasets.loader as loader_module
 
-        monkeypatch.setattr(loader_module, "CANONICAL_DATASETS_DIR", tmp_path)
+        monkeypatch.setattr(loader_module, "DATASETS_DIR", tmp_path)
 
         _write_dataset(tmp_path, name="counted", messages_jsonl=_minimal_messages_jsonl(7))
 
-        results = list_canonical_datasets()
+        results = list_datasets()
         assert len(results) == 1
         assert results[0].message_count == 7
 
     def test_sorted_by_name(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         import cri.datasets.loader as loader_module
 
-        monkeypatch.setattr(loader_module, "CANONICAL_DATASETS_DIR", tmp_path)
+        monkeypatch.setattr(loader_module, "DATASETS_DIR", tmp_path)
 
         for name in ["charlie", "alpha", "bravo"]:
             _write_dataset(tmp_path, name=name)
 
-        results = list_canonical_datasets()
+        results = list_datasets()
         names = [r.name for r in results]
         assert names == sorted(names)
 
@@ -922,12 +922,12 @@ class TestListCanonicalDatasets:
         """Files (not dirs) in the canonical directory should be skipped."""
         import cri.datasets.loader as loader_module
 
-        monkeypatch.setattr(loader_module, "CANONICAL_DATASETS_DIR", tmp_path)
+        monkeypatch.setattr(loader_module, "DATASETS_DIR", tmp_path)
 
         _write_dataset(tmp_path, name="real-ds")
         (tmp_path / "README.md").write_text("# Hello", encoding="utf-8")
 
-        results = list_canonical_datasets()
+        results = list_datasets()
         assert len(results) == 1
         assert results[0].name == "real-ds"
 
@@ -935,23 +935,23 @@ class TestListCanonicalDatasets:
         """Directories without conversations.jsonl should be skipped."""
         import cri.datasets.loader as loader_module
 
-        monkeypatch.setattr(loader_module, "CANONICAL_DATASETS_DIR", tmp_path)
+        monkeypatch.setattr(loader_module, "DATASETS_DIR", tmp_path)
 
         _write_dataset(tmp_path, name="valid")
         (tmp_path / "empty-dir").mkdir()
 
-        results = list_canonical_datasets()
+        results = list_datasets()
         assert len(results) == 1
         assert results[0].name == "valid"
 
     def test_dataset_info_path_is_absolute(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         import cri.datasets.loader as loader_module
 
-        monkeypatch.setattr(loader_module, "CANONICAL_DATASETS_DIR", tmp_path)
+        monkeypatch.setattr(loader_module, "DATASETS_DIR", tmp_path)
 
         _write_dataset(tmp_path, name="abs-path-ds")
 
-        results = list_canonical_datasets()
+        results = list_datasets()
         assert results[0].path.is_absolute()
 
 

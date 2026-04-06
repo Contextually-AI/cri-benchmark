@@ -134,7 +134,7 @@ The simplest way to run your adapter is through the CLI with a dotted import pat
 ```bash
 cri run \
   --adapter my_adapter:MyMemoryAdapter \
-  --dataset datasets/canonical/persona-1-base \
+  --dataset src/cri/datasets/persona-1-base \
   --verbose
 ```
 
@@ -157,7 +157,7 @@ from my_adapter import MyMemoryAdapter
 async def main():
     result = await run_benchmark(
         adapter_name="my_adapter:MyMemoryAdapter",
-        dataset_path="datasets/canonical/persona-1-base",
+        dataset_path="src/cri/datasets/persona-1-base",
         judge_runs=3,
         output_dir="results/my-system",
         output_format="json",

@@ -1,0 +1,11 @@
+{
+  "dataset_id": "persona-1-base",
+  "persona_id": "persona-1-base",
+  "persona_name": "Marcus Rivera",
+  "description": "Complex persona with contradictions, temporal gaps, opinion reversals, and nuanced belief evolution across 289 days.",
+  "complexity_level": "base",
+  "message_count": 2862,
+  "simulated_days": 289,
+  "version": "2.0.0",
+  "seed": null
+}

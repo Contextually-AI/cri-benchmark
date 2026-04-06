@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-04-06
+
+### Added
+
+- Richer dataset metadata: `persona_name`, `description`, and `complexity_level` fields on `DatasetMetadata`
+- Per-dimension progress reporting during benchmark evaluation with elapsed time and pass/fail indicators
+- New dataset loader functions: `get_persona()`, `list_persona_specs()`, `load_persona_spec()`
+- Package data support: datasets are now bundled inside the `cri` package for reliable `pip install` usage
+
+### Changed
+
+- Datasets moved from `datasets/canonical/` to `src/cri/datasets/` and included as package data
+- `list_canonical_datasets()` renamed to `list_datasets()`
+- `RichPersonaSpec` renamed to `PersonaSpec`; persona data loaded from JSON files instead of hardcoded Python constants
+- LLM judge response caching now enabled by default (`--cache` flag)
+- Dataset loader rewritten to support the new package-data layout and persona loading
+
+### Removed
+
+- ~1,700 lines of hardcoded persona specifications from `specs.py`
+- `datasets/canonical/` directory and `datasets/README.md` (datasets now live inside the package)
+
 ## [0.1.1] - 2026-04-02
 
 ### Added
@@ -57,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI pipeline with lint, type-check, and test matrix (Python 3.11, 3.12)
 - Automated PyPI publishing via GitHub Actions (trusted publisher)
 
-[Unreleased]: https://github.com/Contextually-AI/cri-benchmark/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Contextually-AI/cri-benchmark/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Contextually-AI/cri-benchmark/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Contextually-AI/cri-benchmark/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Contextually-AI/cri-benchmark/releases/tag/v0.1.0

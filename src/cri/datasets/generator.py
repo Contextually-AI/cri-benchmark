@@ -1,6 +1,6 @@
 """Dataset generator for CRI Benchmark — Contextual Resonance Index.
 
-Generates synthetic benchmark datasets from :class:`RichPersonaSpec`
+Generates synthetic benchmark datasets from :class:`PersonaSpec`
 definitions. The generator is an **offline tool** — it does not call
 external LLM APIs. Instead it uses deterministic, template-based
 conversation synthesis seeded with a reproducible PRNG so that the same
@@ -12,10 +12,10 @@ Typical usage::
     from cri.datasets.generator import DatasetGenerator
 
     gen = DatasetGenerator(GeneratorConfig(seed=42))
-    datasets = gen.generate_canonical_suite()
+    datasets = gen.generate_suite()
 
     for ds in datasets:
-        gen.save_dataset(ds, Path("datasets/canonical") / ds.metadata.persona_id)
+        gen.save_dataset(ds, Path("datasets") / ds.metadata.persona_id)
 
 The resulting directory layout per dataset is::
 
@@ -35,7 +35,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from cri.datasets.personas.specs import ALL_PERSONAS, RichPersonaSpec
+from cri.datasets.personas.specs import PersonaSpec
 from cri.models import (
     BeliefChange,
     ConflictScenario,
@@ -171,7 +171,7 @@ class DatasetGenerator:
     # Public API
     # ------------------------------------------------------------------
 
-    def generate(self, persona: RichPersonaSpec) -> ConversationDataset:
+    def generate(self, persona: PersonaSpec) -> ConversationDataset:
         """Generate a complete conversation dataset for a persona.
 
         Creates a realistic multi-session conversation that weaves in
@@ -180,7 +180,7 @@ class DatasetGenerator:
         references at appropriate points throughout the timeline.
 
         Args:
-            persona: Rich persona specification with ground-truth data.
+            persona: Persona specification with ground-truth data.
 
         Returns:
             A fully populated :class:`ConversationDataset` ready for
@@ -217,6 +217,9 @@ class DatasetGenerator:
         metadata = DatasetMetadata(
             dataset_id=persona.persona_id,
             persona_id=persona.persona_id,
+            persona_name=persona.name,
+            description=persona.description,
+            complexity_level=persona.complexity_level,
             message_count=len(messages),
             simulated_days=persona.simulated_days,
             version="1.0.0",
@@ -239,19 +242,30 @@ class DatasetGenerator:
         )
         return dataset
 
-    def generate_canonical_suite(self) -> list[ConversationDataset]:
-        """Generate datasets for all canonical personas.
+    def generate_suite(
+        self,
+        personas: list[PersonaSpec] | None = None,
+    ) -> list[ConversationDataset]:
+        """Generate datasets for all personas.
+
+        Args:
+            personas: List of persona specs to generate for. If ``None``,
+                loads all persona specs from the datasets directory.
 
         Returns:
-            A list of :class:`ConversationDataset` instances, one per
-            canonical persona (basic, intermediate, advanced).
+            A list of :class:`ConversationDataset` instances, one per persona.
         """
-        logger.info("Generating canonical suite (%d personas)", len(ALL_PERSONAS))
+        if personas is None:
+            from cri.datasets.loader import list_persona_specs
+
+            personas = list_persona_specs()
+
+        logger.info("Generating suite (%d personas)", len(personas))
         datasets: list[ConversationDataset] = []
-        for persona in ALL_PERSONAS:
+        for persona in personas:
             ds = self.generate(persona)
             datasets.append(ds)
-        logger.info("Canonical suite complete: %d datasets", len(datasets))
+        logger.info("Suite complete: %d datasets", len(datasets))
         return datasets
 
     def save_dataset(
@@ -259,7 +273,7 @@ class DatasetGenerator:
         dataset: ConversationDataset,
         output_dir: Path,
     ) -> None:
-        """Persist a dataset to disk in the canonical directory layout.
+        """Persist a dataset to disk in the standard directory layout.
 
         Creates three files:
 
@@ -303,7 +317,7 @@ class DatasetGenerator:
 
     def _plan_sessions(
         self,
-        persona: RichPersonaSpec,
+        persona: PersonaSpec,
     ) -> list[dict[str, Any]]:
         """Plan conversation sessions across the simulated timeline.
 
@@ -369,7 +383,7 @@ class DatasetGenerator:
 
     def _build_schedule(
         self,
-        persona: RichPersonaSpec,
+        persona: PersonaSpec,
         sessions: list[dict[str, Any]],
     ) -> dict[int, list[dict[str, Any]]]:
         """Assign content items (signals, noise, changes, conflicts) to sessions.
@@ -467,7 +481,7 @@ class DatasetGenerator:
 
     def _generate_messages(
         self,
-        persona: RichPersonaSpec,
+        persona: PersonaSpec,
         sessions: list[dict[str, Any]],
         schedule: dict[int, list[dict[str, Any]]],
     ) -> list[Message]:
@@ -501,7 +515,7 @@ class DatasetGenerator:
 
     def _generate_session_messages(
         self,
-        persona: RichPersonaSpec,
+        persona: PersonaSpec,
         session: dict[str, Any],
         items: list[dict[str, Any]],
         start_id: int,
@@ -584,7 +598,7 @@ class DatasetGenerator:
 
     def _item_to_user_message(
         self,
-        persona: RichPersonaSpec,
+        persona: PersonaSpec,
         item: dict[str, Any],
     ) -> str | None:
         """Convert a scheduled content item to a user message string."""
@@ -664,7 +678,7 @@ class DatasetGenerator:
             return f"Back when {tf.description.lower()} was {tf.value}, things were different."
         return f"Just so you know, {tf.description.lower()}: {tf.value}."
 
-    def _generate_filler_user_message(self, persona: RichPersonaSpec) -> str:
+    def _generate_filler_user_message(self, persona: PersonaSpec) -> str:
         """Generate a casual filler message for the user."""
         roll = self._rng.random()
         if roll < 0.3:
@@ -740,7 +754,7 @@ class DatasetGenerator:
 
     def _build_ground_truth(
         self,
-        persona: RichPersonaSpec,
+        persona: PersonaSpec,
         messages: list[Message],
     ) -> GroundTruth:
         """Assemble the ground truth from the persona spec.

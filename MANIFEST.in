@@ -4,5 +4,5 @@ include CHANGELOG.md
 include METHODOLOGY.md
 include CONTRIBUTING.md
 recursive-include src/cri py.typed
-recursive-include datasets *.json *.jsonl *.md
+recursive-include src/cri/datasets *.json *.jsonl
 recursive-include docs *.md

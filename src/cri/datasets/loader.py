@@ -5,7 +5,10 @@ API:
     - load_messages(path) -> list[Message]  (JSONL format)
     - load_ground_truth(path) -> GroundTruth  (JSON format)
     - validate_dataset(dataset) -> list[str]  (returns validation errors)
-    - list_canonical_datasets() -> list[DatasetInfo]
+    - list_datasets() -> list[DatasetInfo]
+    - load_persona_spec(dataset_dir) -> PersonaSpec
+    - get_persona(persona_id) -> PersonaSpec
+    - list_persona_specs() -> list[PersonaSpec]
 
 Dataset directory structure:
     dataset_dir/
@@ -22,6 +25,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, ValidationError
 
+from cri.datasets.personas.specs import PersonaSpec
 from cri.models import (
     ConversationDataset,
     DatasetMetadata,
@@ -31,8 +35,8 @@ from cri.models import (
 
 logger = logging.getLogger(__name__)
 
-# Default location for canonical datasets (project_root/datasets/canonical)
-CANONICAL_DATASETS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "datasets" / "canonical"
+# Default location for datasets (inside the package)
+DATASETS_DIR = Path(__file__).resolve().parent
 
 
 # ---------------------------------------------------------------------------
@@ -41,10 +45,10 @@ CANONICAL_DATASETS_DIR = Path(__file__).resolve().parent.parent.parent.parent / 
 
 
 class DatasetInfo(BaseModel):
-    """Metadata about a discovered canonical dataset.
+    """Metadata about a discovered dataset.
 
-    Returned by :func:`list_canonical_datasets` to describe each dataset
-    found in the canonical directory without fully loading it.
+    Returned by :func:`list_datasets` to describe each dataset
+    found in the datasets directory without fully loading it.
     """
 
     name: str = Field(description="Dataset directory name")
@@ -57,7 +61,7 @@ class DatasetInfo(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Module-level loader functions (new API)
+# Module-level loader functions
 # ---------------------------------------------------------------------------
 
 
@@ -289,31 +293,27 @@ def validate_dataset(dataset: ConversationDataset) -> list[str]:
     return errors
 
 
-def list_canonical_datasets() -> list[DatasetInfo]:
-    """Discover all datasets in the canonical datasets directory.
+def list_datasets() -> list[DatasetInfo]:
+    """Discover all datasets in the datasets directory.
 
-    Scans the canonical directory (``datasets/canonical/`` relative to the
-    project root) for subdirectories that contain at least a
-    ``conversations.jsonl`` file.
+    Scans the datasets directory (``src/cri/datasets/``) for subdirectories
+    that contain at least a ``conversations.jsonl`` file.
 
     Returns:
         A sorted list of :class:`DatasetInfo` objects describing each
-        discovered dataset. Returns an empty list if the canonical
-        directory does not exist.
+        discovered dataset. Returns an empty list if no datasets are found.
     """
-    if not CANONICAL_DATASETS_DIR.exists():
+    if not DATASETS_DIR.exists():
         return []
 
     results: list[DatasetInfo] = []
-    for entry in sorted(CANONICAL_DATASETS_DIR.iterdir()):
+    for entry in sorted(DATASETS_DIR.iterdir()):
         if not entry.is_dir():
             continue
 
         conversations_path = entry / "conversations.jsonl"
         ground_truth_path = entry / "ground_truth.json"
 
-        # Only include directories that look like new-format datasets
-        # (have conversations.jsonl) OR old-format datasets
         has_conversations = conversations_path.exists()
         has_gt = ground_truth_path.exists()
 
@@ -326,7 +326,7 @@ def list_canonical_datasets() -> list[DatasetInfo]:
             except OSError:
                 message_count = None
 
-        # Include if it has conversations.jsonl (new format)
+        # Include if it has conversations.jsonl
         if has_conversations:
             results.append(
                 DatasetInfo(
@@ -338,3 +338,88 @@ def list_canonical_datasets() -> list[DatasetInfo]:
             )
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# Persona spec loading
+# ---------------------------------------------------------------------------
+
+
+def load_persona_spec(dataset_dir: Path) -> PersonaSpec:
+    """Load a PersonaSpec from a dataset directory.
+
+    Reconstructs a :class:`PersonaSpec` from the dataset's
+    ``ground_truth.json`` and ``metadata.json`` files.
+
+    Args:
+        dataset_dir: Path to the dataset directory.
+
+    Returns:
+        A validated PersonaSpec instance.
+
+    Raises:
+        FileNotFoundError: If required files are missing.
+        ValueError: If files contain invalid data.
+    """
+    dataset_dir = Path(dataset_dir)
+    gt = load_ground_truth(dataset_dir / "ground_truth.json")
+
+    metadata_path = dataset_dir / "metadata.json"
+    if not metadata_path.exists():
+        raise FileNotFoundError(f"metadata.json not found in {dataset_dir}")
+
+    with open(metadata_path, encoding="utf-8") as fh:
+        meta = json.load(fh)
+
+    # Extract name from metadata or ground truth profile
+    name = meta.get("persona_name") or ""
+    if not name and "name" in gt.final_profile:
+        name_dim = gt.final_profile["name"]
+        name = str(name_dim.value) if name_dim.value else ""
+
+    return PersonaSpec(
+        persona_id=meta["persona_id"],
+        name=name,
+        description=meta.get("description", ""),
+        complexity_level=meta.get("complexity_level", "base"),
+        profile_dimensions=gt.final_profile,
+        belief_changes=gt.changes,
+        noise_examples=gt.noise_examples,
+        signal_examples=gt.signal_examples,
+        conflicts=gt.conflicts,
+        temporal_facts=gt.temporal_facts,
+        query_relevance_pairs=gt.query_relevance_pairs,
+        simulated_days=meta.get("simulated_days", 90),
+        target_message_count=meta.get("message_count", 200),
+    )
+
+
+def get_persona(persona_id: str) -> PersonaSpec:
+    """Load a PersonaSpec by persona ID.
+
+    Searches the datasets directory for a dataset matching the given
+    persona ID and returns its PersonaSpec.
+
+    Args:
+        persona_id: The persona identifier (e.g. ``'persona-1-base'``).
+
+    Returns:
+        A validated PersonaSpec instance.
+
+    Raises:
+        FileNotFoundError: If no dataset with the given persona ID is found.
+    """
+    dataset_dir = DATASETS_DIR / persona_id
+    if not dataset_dir.is_dir():
+        raise FileNotFoundError(f"No dataset found for persona_id '{persona_id}' in {DATASETS_DIR}")
+    return load_persona_spec(dataset_dir)
+
+
+def list_persona_specs() -> list[PersonaSpec]:
+    """Load all persona specs from the datasets directory.
+
+    Returns:
+        A list of PersonaSpec instances, one per discovered dataset.
+    """
+    datasets = list_datasets()
+    return [load_persona_spec(ds.path) for ds in datasets]

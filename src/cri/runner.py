@@ -51,7 +51,9 @@ from rich.table import Table
 
 from cri.adapter import MemoryAdapter
 from cri.datasets.loader import (
-    list_canonical_datasets,
+    list_datasets as list_datasets_fn,
+)
+from cri.datasets.loader import (
     load_dataset,
 )
 from cri.datasets.loader import (
@@ -60,6 +62,7 @@ from cri.datasets.loader import (
 from cri.judge import BinaryJudge, LLMFactory, create_default_llm
 from cri.models import (
     BenchmarkResult,
+    DimensionResult,
     ScoringConfig,
     ScoringProfile,
 )
@@ -240,7 +243,7 @@ async def run_benchmark(
     dimensions: list[str] | None = None,
     scale_test: bool = False,
     limit: int | None = None,
-    cache: bool = False,
+    cache: bool = True,
     cache_dir: str | None = None,
 ) -> BenchmarkResult:
     """Execute the full CRI benchmark pipeline.
@@ -373,10 +376,33 @@ async def run_benchmark(
     if verbose:
         console.print("[bold]Running evaluation across all dimensions...[/bold]")
 
-    result = await engine.run(
-        adapter=instrumented,
-        system_name=adapter_name,
+    n_dims = len(config.enabled_dimensions)
+    eval_progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TimeElapsedColumn(),
+        console=console,
+        disable=not verbose,
     )
+    with eval_progress:
+        eval_task = eval_progress.add_task("Scoring dimensions", total=n_dims)
+
+        def _on_dimension_done(dim_name: str, dim_result: DimensionResult, elapsed_s: float) -> None:
+            status = "[green]✓[/green]" if dim_result.score > 0 else "[red]✗[/red]"
+            eval_progress.console.print(
+                f"  {status} {dim_name}: [bold]{dim_result.score:.4f}[/bold]"
+                f"  ({dim_result.passed_checks}/{dim_result.total_checks} checks passed)"
+                f"  [dim]{elapsed_s:.1f}s[/dim]"
+            )
+            eval_progress.advance(eval_task)
+
+        result = await engine.run(
+            adapter=instrumented,
+            system_name=adapter_name,
+            on_dimension_complete=_on_dimension_done,
+        )
 
     # 9. (Optional) Run SSI scale-sensitivity test
     if run_scale_test:
@@ -552,8 +578,8 @@ def main() -> None:
 )
 @click.option(
     "--cache/--no-cache",
-    default=False,
-    help="Cache LLM judge responses to disk to avoid redundant API calls across runs.",
+    default=True,
+    help="Cache LLM judge responses to disk to avoid redundant API calls across runs. Enabled by default.",
 )
 @click.option(
     "--cache-dir",
@@ -661,17 +687,17 @@ def list_adapters() -> None:
 
 
 @main.command(name="list-datasets")
-def list_datasets() -> None:
-    """List available canonical benchmark datasets."""
-    datasets = list_canonical_datasets()
+def list_datasets_cmd() -> None:
+    """List available benchmark datasets."""
+    datasets = list_datasets_fn()
 
     console.print()
-    console.print("[bold cyan]═══ Canonical Datasets ═══[/bold cyan]")
+    console.print("[bold cyan]═══ Datasets ═══[/bold cyan]")
     console.print()
 
     if not datasets:
-        console.print("[yellow]No canonical datasets found.[/yellow]")
-        console.print("[dim]Place datasets in datasets/canonical/ or use --dataset <path> to specify a custom dataset.[/dim]")
+        console.print("[yellow]No datasets found.[/yellow]")
+        console.print("[dim]Use --dataset <path> to specify a custom dataset.[/dim]")
         return
 
     table = Table(show_header=True, header_style="bold")

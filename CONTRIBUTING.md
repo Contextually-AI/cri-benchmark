@@ -81,13 +81,12 @@ cri/
 │       ├── loader.py                 # Dataset loading
 │       ├── generator.py              # Synthetic dataset generation
 │       └── personas/
-│           └── specs.py              # RichPersonaSpec definitions
+│           └── specs.py              # PersonaSpec definitions
 ├── tests/                            # Test suite (mirrors src/ layout)
 │   ├── conftest.py                   # Shared fixtures & mock helpers
 │   ├── test_models.py
 │   ├── test_dimensions/             # Per-dimension scorer tests
 │   └── ...
-├── datasets/                         # Canonical benchmark datasets
 ├── docs/                             # Documentation (Markdown + Mermaid)
 ├── examples/                         # Example adapters & usage
 └── pyproject.toml                    # Build config, tool settings
@@ -388,7 +387,7 @@ Datasets drive the CRI benchmark. Each dataset consists of a simulated conversat
 Each dataset lives in its own directory:
 
 ```
-datasets/canonical/persona-4-expert/
+src/cri/datasets/persona-4-expert/
 ├── conversations.jsonl      # One Message JSON object per line
 ├── ground_truth.json        # Expected outcomes (GroundTruth model)
 └── metadata.json            # DatasetMetadata (persona ID, complexity, etc.)
@@ -396,10 +395,10 @@ datasets/canonical/persona-4-expert/
 
 ### Step 1 — Define a Persona Specification
 
-Create a `RichPersonaSpec` in `src/cri/datasets/personas/specs.py` (or a new file):
+Create a `PersonaSpec` in `src/cri/datasets/personas/specs.py` (or a new file):
 
 ```python
-PERSONA_4_EXPERT = RichPersonaSpec(
+PERSONA_4_EXPERT = PersonaSpec(
     id="persona-4-expert",
     name="Expert User",
     complexity=3,   # 1=basic, 2=intermediate, 3=advanced
@@ -448,7 +447,7 @@ from pathlib import Path
 
 gen = DatasetGenerator(GeneratorConfig(seed=42))
 dataset = gen.generate(PERSONA_4_EXPERT)
-gen.save_dataset(dataset, Path("datasets/canonical/persona-4-expert"))
+gen.save_dataset(dataset, Path("src/cri/datasets/persona-4-expert"))
 ```
 
 The generator is **deterministic** — the same seed always produces the same output. No LLM API calls are made during generation.
@@ -459,7 +458,7 @@ The generator is **deterministic** — the same seed always produces the same ou
 from cri.datasets.loader import load_dataset
 
 # Will raise ValidationError if structure is invalid
-ds = load_dataset(Path("datasets/canonical/persona-4-expert"))
+ds = load_dataset(Path("src/cri/datasets/persona-4-expert"))
 assert len(ds.conversations) > 0
 assert ds.ground_truth.final_profile
 assert len(ds.ground_truth.changes) > 0
@@ -475,9 +474,8 @@ Also verify manually:
 
 ### Step 4 — Add to the Canonical Suite (Optional)
 
-1. Register the persona in `ALL_PERSONAS` in `src/cri/datasets/personas/specs.py`.
-2. Add the generated files to `datasets/canonical/`.
-3. Update `datasets/README.md` with a description of the new persona.
+1. Add the persona's JSON data files to `src/cri/datasets/<persona-id>/`.
+2. Verify the dataset loads and validates: `cri validate-dataset src/cri/datasets/<persona-id>`.
 
 ---
 

@@ -41,13 +41,13 @@ RUN pip install --no-cache-dir /tmp/wheels/*.whl && \
     pip install --no-cache-dir chromadb>=0.4 && \
     rm -rf /tmp/wheels
 
-# Copy datasets, docs, and example adapters
-COPY --chown=cri:cri datasets/ datasets/
-COPY --chown=cri:cri docs/ docs/
+# Copy example adapters (needed for built-in adapter registry)
 COPY --chown=cri:cri examples/ examples/
 
 # Ensure examples/ (adapters) is importable
 ENV PYTHONPATH=/app
+# Suppress ONNX Runtime GPU discovery warnings (no GPU in container)
+ENV ONNXRUNTIME_LOG_SEVERITY_LEVEL=3
 
 # Create results directory and cache for ChromaDB ONNX model
 RUN mkdir -p /app/results && chown cri:cri /app/results && \

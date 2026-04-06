@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cri-benchmark"
-version = "0.1.1"
+version = "0.1.2"
 description = "CRI Benchmark — Contextual Resonance Index: An open-source benchmark for evaluating AI long-term memory systems"
 readme = "README.md"
 license = "MIT"
@@ -56,6 +56,9 @@ Changelog = "https://github.com/Contextually-AI/cri-benchmark/blob/main/CHANGELO
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"cri.datasets" = ["persona-*/*.json", "persona-*/*.jsonl"]
 
 [tool.ruff]
 line-length = 160

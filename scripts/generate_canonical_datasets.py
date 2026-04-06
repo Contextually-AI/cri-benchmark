@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate canonical CRI benchmark datasets from persona specifications.
+"""Generate CRI benchmark datasets from persona specifications.
 
 This script creates structurally complete datasets from persona specifications.
 Each dataset directory gets:
@@ -32,10 +32,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from cri.datasets.personas.specs import (  # noqa: E402
-    ALL_PERSONAS,
-    RichPersonaSpec,
-)
+from cri.datasets.loader import list_persona_specs  # noqa: E402
+from cri.datasets.personas.specs import PersonaSpec  # noqa: E402
 from cri.models import (  # noqa: E402
     DatasetMetadata,
     GroundTruth,
@@ -43,8 +41,8 @@ from cri.models import (  # noqa: E402
 )
 
 
-def generate_ground_truth(persona: RichPersonaSpec) -> GroundTruth:
-    """Convert a RichPersonaSpec into a GroundTruth object."""
+def generate_ground_truth(persona: PersonaSpec) -> GroundTruth:
+    """Convert a PersonaSpec into a GroundTruth object."""
     return GroundTruth(
         final_profile=persona.profile_dimensions,
         changes=persona.belief_changes,
@@ -58,7 +56,6 @@ def generate_ground_truth(persona: RichPersonaSpec) -> GroundTruth:
 
 def _assistant_response(signal_text: str, persona_name: str) -> str:
     """Generate a plausible assistant response to a signal message."""
-    # Short acknowledging responses that reference key info
     templates = [
         f"Got it! Thanks for sharing that, {persona_name}.",
         "That's really interesting. I'll keep that in mind.",
@@ -93,7 +90,7 @@ def _assistant_response_noise(noise_text: str) -> str:
 
 
 def _generate_belief_change_messages(
-    persona: RichPersonaSpec,
+    persona: PersonaSpec,
     change_idx: int,
 ) -> list[tuple[str, str]]:
     """Generate user+assistant message pairs for a belief change."""
@@ -116,7 +113,7 @@ def _generate_belief_change_messages(
 
 
 def _generate_conflict_messages(
-    persona: RichPersonaSpec,
+    persona: PersonaSpec,
     conflict_idx: int,
 ) -> list[tuple[str, str, int]]:
     """Generate messages for a conflict scenario. Returns (user_msg, asst_msg, target_msg_id)."""
@@ -132,7 +129,7 @@ def _generate_conflict_messages(
 
 
 def _generate_temporal_messages(
-    persona: RichPersonaSpec,
+    persona: PersonaSpec,
 ) -> list[tuple[str, str]]:
     """Generate messages that establish temporal facts."""
     pairs = []
@@ -146,7 +143,7 @@ def _generate_temporal_messages(
     return pairs
 
 
-def generate_conversations(persona: RichPersonaSpec, seed: int = 42) -> list[Message]:
+def generate_conversations(persona: PersonaSpec, seed: int = 42) -> list[Message]:
     """Generate a deterministic conversation from a persona spec.
 
     Strategy:
@@ -286,7 +283,7 @@ def generate_conversations(persona: RichPersonaSpec, seed: int = 42) -> list[Mes
     return messages
 
 
-def save_dataset(persona: RichPersonaSpec, output_dir: Path, seed: int = 42) -> dict:
+def save_dataset(persona: PersonaSpec, output_dir: Path, seed: int = 42) -> dict:
     """Generate and save a complete dataset for a persona."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -310,6 +307,9 @@ def save_dataset(persona: RichPersonaSpec, output_dir: Path, seed: int = 42) -> 
     metadata = DatasetMetadata(
         dataset_id=persona.persona_id,
         persona_id=persona.persona_id,
+        persona_name=persona.name,
+        description=persona.description,
+        complexity_level=persona.complexity_level,
         message_count=len(messages),
         simulated_days=simulated_days,
         version="1.0.0",
@@ -359,10 +359,10 @@ def save_dataset(persona: RichPersonaSpec, output_dir: Path, seed: int = 42) -> 
 
 
 def generate_readme(datasets_dir: Path, all_stats: list[dict]) -> None:
-    """Generate datasets/README.md documenting the canonical datasets."""
-    readme = """# CRI Benchmark — Canonical Datasets
+    """Generate datasets/README.md documenting the datasets."""
+    readme = """# CRI Benchmark — Datasets
 
-This directory contains the canonical benchmark datasets for the
+This directory contains the benchmark datasets for the
 **Contextual Resonance Index (CRI)** benchmark. Each dataset represents
 a simulated multi-session conversation with a fictional persona, designed
 to exercise all six CRI evaluation dimensions.
@@ -402,7 +402,7 @@ The ground truth file contains:
 - **temporal_facts** — Facts with time-bounded validity
 - **query_relevance_pairs** — Queries with expected relevant/irrelevant facts
 
-## Canonical Personas
+## Personas
 
 """
 
@@ -438,15 +438,15 @@ Each dataset exercises all six dimensions:
 ## Loading Datasets
 
 ```python
-from cri.datasets.loader import load_dataset, list_canonical_datasets
+from cri.datasets.loader import load_dataset, list_datasets
 
-# List all canonical datasets
-datasets = list_canonical_datasets()
+# List all datasets
+datasets = list_datasets()
 for ds in datasets:
     print(f"{ds.name}: {ds.message_count} messages, GT={ds.has_ground_truth}")
 
 # Load a specific dataset
-dataset = load_dataset("datasets/canonical/persona-1-base")
+dataset = load_dataset("src/cri/datasets/persona-1-base")
 print(f"Messages: {len(dataset.messages)}")
 print(f"Profile dims: {len(dataset.ground_truth.final_profile)}")
 ```
@@ -461,10 +461,6 @@ To regenerate:
 ```bash
 python scripts/generate_canonical_datasets.py
 ```
-
-## Extending
-
-To add new datasets, see [docs/guides/new-datasets.md](../docs/guides/new-datasets.md).
 """
 
     readme_path = datasets_dir / "README.md"
@@ -474,27 +470,25 @@ To add new datasets, see [docs/guides/new-datasets.md](../docs/guides/new-datase
 
 
 def main() -> None:
-    datasets_dir = PROJECT_ROOT / "datasets" / "canonical"
-    print("CRI Benchmark — Canonical Dataset Generator")
+    datasets_dir = PROJECT_ROOT / "src" / "cri" / "datasets"
+    print("CRI Benchmark — Dataset Generator")
     print("=" * 50)
     print(f"Output directory: {datasets_dir}")
     print()
 
+    all_personas = list_persona_specs()
     all_stats = []
-    for persona in ALL_PERSONAS:
+    for persona in all_personas:
         output_dir = datasets_dir / persona.persona_id
         stats = save_dataset(persona, output_dir, seed=42)
         all_stats.append(stats)
-
-    # Generate README
-    generate_readme(datasets_dir.parent, all_stats)
 
     # Validate each dataset
     print("\nValidation:")
     from cri.datasets.loader import load_dataset, validate_dataset
 
     all_valid = True
-    for persona in ALL_PERSONAS:
+    for persona in all_personas:
         ds_dir = datasets_dir / persona.persona_id
         try:
             dataset = load_dataset(ds_dir)

@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from cri.adapter import MemoryAdapter
@@ -126,6 +128,7 @@ class ScoringEngine:
         self,
         adapter: MemoryAdapter,
         system_name: str,
+        on_dimension_complete: Callable[[str, DimensionResult, float], None] | None = None,
     ) -> BenchmarkResult:
         """Execute the full benchmark evaluation pipeline.
 
@@ -159,23 +162,31 @@ class ScoringEngine:
                     dim_name,
                 )
                 return dim_name, None
+            t0 = time.monotonic()
             try:
                 result = await scorer.score(adapter, self.ground_truth, self.judge)
+                elapsed = time.monotonic() - t0
+                if on_dimension_complete is not None:
+                    on_dimension_complete(dim_name, result, elapsed)
                 return dim_name, result
             except Exception as exc:
+                elapsed = time.monotonic() - t0
                 logger.warning(
                     "Dimension %r scorer raised %s: %s — recording 0.0",
                     dim_name,
                     type(exc).__name__,
                     exc,
                 )
-                return dim_name, DimensionResult(
+                err_result = DimensionResult(
                     dimension_name=dim_name,
                     score=0.0,
                     passed_checks=0,
                     total_checks=0,
                     details=[{"error": str(exc)}],
                 )
+                if on_dimension_complete is not None:
+                    on_dimension_complete(dim_name, err_result, elapsed)
+                return dim_name, err_result
 
         pairs = await asyncio.gather(*[_score_one(d) for d in self.config.enabled_dimensions])
         for dim_name, result in pairs:

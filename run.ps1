@@ -12,7 +12,7 @@
     .\run.ps1                                                   # All adapters, all datasets
     .\run.ps1 -Limit 50                                         # Smoke test (50 messages)
     .\run.ps1 -Adapter rag                                      # Single adapter, all datasets
-    .\run.ps1 -Adapter rag -Dataset datasets/canonical/persona-1-base
+    .\run.ps1 -Adapter rag -Dataset src/cri/datasets/persona-1-base
     .\run.ps1 -Adapter rag,full-context                         # Multiple adapters
     .\run.ps1 -Format markdown                                   # Custom format
     .\run.ps1 -Quiet                                              # Suppress verbose output
@@ -91,12 +91,11 @@ if (-not $Dataset -or $Dataset.Count -eq 0) {
     $StepStart = Get-Date
     Write-Log "Discovering datasets..."
 
-    $discovered = Get-ChildItem -Path (Join-Path $PSScriptRoot "datasets" "canonical") -Directory -ErrorAction SilentlyContinue |
-        Sort-Object Name |
-        ForEach-Object {
-            # Use forward-slash relative paths to match the Linux convention
-            "datasets/canonical/$($_.Name)"
-        }
+    # Discover dataset paths inside the container via Python (Rich table truncates paths)
+    $discovered = @(docker run --rm --entrypoint python `
+        $Image -c `
+        "from cri.datasets.loader import list_datasets; [print(ds.path) for ds in list_datasets()]" `
+        2>$null) | Where-Object { $_ } | Sort-Object
 
     if (-not $discovered -or $discovered.Count -eq 0) {
         Write-Log "ERROR: No datasets found. Pass -Dataset explicitly."

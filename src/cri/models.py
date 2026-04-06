@@ -245,6 +245,9 @@ class DatasetMetadata(BaseModel):
 
     dataset_id: str = Field(description="Unique identifier for this dataset")
     persona_id: str = Field(description="Identifier of the persona used to generate the dataset")
+    persona_name: str | None = Field(default=None, description="Human-readable name of the persona")
+    description: str | None = Field(default=None, description="Brief description of the dataset/persona")
+    complexity_level: str | None = Field(default=None, description="Complexity tier of the persona (e.g. 'base')")
     message_count: int = Field(description="Total number of messages in the dataset")
     simulated_days: int = Field(description="Number of simulated days the conversation spans")
     version: str = Field(description="Dataset format version string")

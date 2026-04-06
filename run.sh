@@ -7,7 +7,7 @@ set -euo pipefail
 #   ./run.sh                                        All adapters, all datasets
 #   ./run.sh --limit 50                             Smoke test (50 messages)
 #   ./run.sh --adapter rag                          Single adapter, all datasets
-#   ./run.sh --adapter rag --dataset datasets/canonical/persona-1-base
+#   ./run.sh --adapter rag --dataset src/cri/datasets/persona-1-base
 #   ./run.sh --adapter rag --adapter full-context   Multiple adapters
 #   ./run.sh --dimensions PAS,DBU                   Only score specific dimensions
 #   ./run.sh --format markdown --verbose            Extra flags forwarded to cri
@@ -31,7 +31,7 @@ ADAPTERS=()
 DATASETS=()
 LIMIT=""
 DIMENSIONS=""
-CACHE=false
+CACHE=true
 CACHE_DIR=""
 EXTRA_ARGS=()
 
@@ -47,6 +47,8 @@ while [ $# -gt 0 ]; do
             DIMENSIONS="$2"; shift 2 ;;
         --cache)
             CACHE=true; shift ;;
+        --no-cache)
+            CACHE=false; shift ;;
         --cache-dir)
             CACHE=true; CACHE_DIR="$2"; shift 2 ;;
         --output|--format|--profile|--judge-runs)
@@ -78,15 +80,11 @@ log "Build complete ($(elapsed $STEP_START))"
 if [ ${#DATASETS[@]} -eq 0 ]; then
     STEP_START=$SECONDS
     log "Discovering datasets..."
-    DISCOVERED=$(docker run --rm \
-        --user "$(id -u):$(id -g)" \
-        -v "$(pwd)/../.auth_token:/.auth_token:ro" \
-        "$IMAGE" list-datasets 2>/dev/null \
-        | grep -oP '(?<=│ )datasets/\S+' || true)
-
-    if [ -z "$DISCOVERED" ]; then
-        DISCOVERED=$(find datasets/canonical -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort)
-    fi
+    # Discover dataset paths inside the container via Python (Rich table truncates paths)
+    DISCOVERED=$(docker run --rm --entrypoint python \
+        "$IMAGE" -c \
+        "from cri.datasets.loader import list_datasets; [print(ds.path) for ds in list_datasets()]" \
+        2>/dev/null || true)
 
     if [ -z "$DISCOVERED" ]; then
         log "ERROR: No datasets found. Pass --dataset explicitly."

@@ -46,7 +46,7 @@ Expected output:
 ═══ Canonical Datasets ═══
 
  Name                     Messages   Ground Truth   Path
- persona-1-base               2862   ✓              datasets/canonical/persona-1-base
+ persona-1-base               2862   ✓              src/cri/datasets/persona-1-base
 ```
 
 | Dataset | Persona | Messages | Profile Dims | Belief Changes | Conflicts |
@@ -79,7 +79,7 @@ Start with the **no-memory** baseline:
 ```bash
 cri run \
   --adapter no-memory \
-  --dataset datasets/canonical/persona-1-base \
+  --dataset src/cri/datasets/persona-1-base \
   --verbose
 ```
 
@@ -90,7 +90,7 @@ cri run \
 ```bash
 cri run \
   --adapter full-context \
-  --dataset datasets/canonical/persona-1-base \
+  --dataset src/cri/datasets/persona-1-base \
   --verbose
 ```
 
@@ -103,7 +103,7 @@ Write structured results to a directory:
 ```bash
 cri run \
   --adapter full-context \
-  --dataset datasets/canonical/persona-1-base \
+  --dataset src/cri/datasets/persona-1-base \
   --output results/full-context-base \
   --format json \
   --verbose
@@ -139,11 +139,11 @@ See the [README](../../README.md#run-with-docker-runsh) for the full parameter r
 Before running a benchmark, you can validate a dataset's structure:
 
 ```bash
-cri validate-dataset datasets/canonical/persona-1-base
+cri validate-dataset src/cri/datasets/persona-1-base
 ```
 
 ```
-Validating dataset: datasets/canonical/persona-1-base
+Validating dataset: src/cri/datasets/persona-1-base
 
 ✓ Dataset is valid.
   Messages:           2862

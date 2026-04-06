@@ -1179,7 +1179,9 @@ class TestCanonicalDatasetPipeline:
     @pytest.fixture
     def canonical_ground_truth(self) -> GroundTruth | None:
         """Load the persona-1-base ground truth if available."""
-        gt_path = Path(__file__).parent.parent / "datasets" / "canonical" / "persona-1-base" / "ground_truth.json"
+        from cri.datasets.loader import DATASETS_DIR
+
+        gt_path = DATASETS_DIR / "persona-1-base" / "ground_truth.json"
         if not gt_path.exists():
             return None
         data = json.loads(gt_path.read_text())
@@ -1188,7 +1190,9 @@ class TestCanonicalDatasetPipeline:
     @pytest.fixture
     def canonical_messages(self) -> list[Message] | None:
         """Load persona-1-base conversation messages if available."""
-        conv_path = Path(__file__).parent.parent / "datasets" / "canonical" / "persona-1-base" / "conversations.jsonl"
+        from cri.datasets.loader import DATASETS_DIR
+
+        conv_path = DATASETS_DIR / "persona-1-base" / "conversations.jsonl"
         if not conv_path.exists():
             return None
         messages = []

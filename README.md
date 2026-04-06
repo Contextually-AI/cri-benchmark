@@ -100,17 +100,17 @@ All dimension scores are normalized to **[0.0, 1.0]**. The composite weights ref
 
 ```bash
 pip install cri-benchmark
-cri run --adapter full-context --dataset datasets/canonical/persona-1-base --verbose
+cri run --adapter full-context --dataset src/cri/datasets/persona-1-base --verbose
 ```
 
 Use `--judge-runs` to control the number of independent LLM judge invocations per evaluation check (majority vote). Lower values are faster and cheaper; higher values increase robustness:
 
 ```bash
 # Fast single-judge run (no majority vote)
-cri run --adapter full-context --dataset datasets/canonical/persona-1-base --judge-runs 1
+cri run --adapter full-context --dataset src/cri/datasets/persona-1-base --judge-runs 1
 
 # Higher robustness with 5 votes per check
-cri run --adapter full-context --dataset datasets/canonical/persona-1-base --judge-runs 5
+cri run --adapter full-context --dataset src/cri/datasets/persona-1-base --judge-runs 5
 ```
 
 Odd values are recommended — with even values, ties resolve to NO.
@@ -119,10 +119,10 @@ Use `--dimensions` to run only specific scoring dimensions instead of all six. P
 
 ```bash
 # Evaluate only Profile Accuracy and Dynamic Belief Updating
-cri run --adapter full-context --dataset datasets/canonical/persona-1-base --dimensions PAS,DBU
+cri run --adapter full-context --dataset src/cri/datasets/persona-1-base --dimensions PAS,DBU
 
 # Single dimension
-cri run --adapter full-context --dataset datasets/canonical/persona-1-base --dimensions MEI
+cri run --adapter full-context --dataset src/cri/datasets/persona-1-base --dimensions MEI
 ```
 
 When `--dimensions` is omitted, all six dimensions are evaluated. Note that `--dimensions` and `--profile` are mutually exclusive.
@@ -131,13 +131,13 @@ Use `--cache` to enable disk-based LLM response caching. When the same prompt is
 
 ```bash
 # First run: calls the LLM API and caches responses
-cri run --adapter full-context --dataset datasets/canonical/persona-1-base --cache
+cri run --adapter full-context --dataset src/cri/datasets/persona-1-base --cache
 
 # Subsequent runs: hits the cache, significantly faster and zero API cost
-cri run --adapter full-context --dataset datasets/canonical/persona-1-base --cache
+cri run --adapter full-context --dataset src/cri/datasets/persona-1-base --cache
 
 # Custom cache directory
-cri run --adapter full-context --dataset datasets/canonical/persona-1-base --cache --cache-dir /tmp/my-cache
+cri run --adapter full-context --dataset src/cri/datasets/persona-1-base --cache --cache-dir /tmp/my-cache
 
 # Clear the cache by deleting the directory
 rm -rf .cri_cache/
